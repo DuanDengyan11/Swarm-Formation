@@ -97,8 +97,8 @@ namespace ego_planner
 
   public:
 
-    PolyTrajOptimizer() {process_file_.open(string("/home/oem/ddy/process.txt"), ios::app);}
-    ~PolyTrajOptimizer() {    process_file_.close();}
+    PolyTrajOptimizer() {}
+    ~PolyTrajOptimizer() {}
 
     /* set variables */
     void setParam(ros::NodeHandle &nh);

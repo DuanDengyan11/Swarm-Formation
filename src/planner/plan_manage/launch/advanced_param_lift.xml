@@ -78,7 +78,7 @@
     <!-- <param name="fsm/replan_trajectory_time"  value="$(arg replan_trajectory_time)" type="double"/> -->
 
 <!-- new add cable check -->
-    <param name="fsm/cable_collision" value="1" type="int"/>
+    <param name="fsm/cable_collision" value="0" type="int"/>
     <param name="fsm/result_file" value="/home/oem/ddy/ego_swarm_1.txt"/>
     <param name="fsm/waypoint_num"  value="$(arg point_num)" type="int"/>
     <param name="fsm/waypoint0_x"   value="$(arg point0_x)" type="double"/>
