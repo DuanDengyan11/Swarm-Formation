@@ -18,6 +18,7 @@
         "vector": "cpp",
         "complex": "cpp",
         "cmath": "cpp",
-        "iosfwd": "cpp"
+        "iosfwd": "cpp",
+        "fstream": "cpp"
     }
 }
