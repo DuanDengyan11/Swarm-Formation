@@ -90,10 +90,11 @@ vector<GridNodePtr> AStar::retrievePath(GridNodePtr current)
 
 bool AStar::ConvertToIndexAndAdjustStartEndPoints(Vector3d start_pt, Vector3d end_pt, Vector3i &start_idx, Vector3i &end_idx)
 {
-    if (!Coord2Index(start_pt, start_idx) || !Coord2Index(end_pt, end_idx))
+    if (!Coord2Index(start_pt, start_idx) || !Coord2Index(end_pt, end_idx)) //确定没有超出地图
         return false;
 
-    if (checkOccupancy(Index2Coord(start_idx)))
+    // 检查轨迹起始点是否在障碍物上，若在，则初始点向两侧扩张，直到初始点不在障碍物上
+    if (checkOccupancy(Index2Coord(start_idx)))  
     {
         //ROS_WARN("Start point is insdide an obstacle.");
         do
@@ -128,7 +129,7 @@ bool AStar::AstarSearch(const double step_size, Vector3d start_pt, Vector3d end_
     center_ = (start_pt + end_pt) / 2;
 
     Vector3i start_idx, end_idx;
-    if (!ConvertToIndexAndAdjustStartEndPoints(start_pt, end_pt, start_idx, end_idx))
+    if (!ConvertToIndexAndAdjustStartEndPoints(start_pt, end_pt, start_idx, end_idx)) 
     {
         ROS_ERROR("Unable to handle the initial or end point, force return!");
         return false;
@@ -164,6 +165,8 @@ bool AStar::AstarSearch(const double step_size, Vector3d start_pt, Vector3d end_
         num_iter++;
         current = openSet_.top();
         openSet_.pop();
+
+        // double t_now_ = ros::Time::now().toSec();
 
         // if ( num_iter < 10000 )
         //     cout << "current=" << current->index.transpose() << endl;
@@ -214,7 +217,7 @@ bool AStar::AstarSearch(const double step_size, Vector3d start_pt, Vector3d end_
                     } else {
                         if (checkOccupancy(Index2Coord(neighborPtr->index)))
                             continue;
-                    }
+                    }//是有检查避障的
                     
                     double static_cost = sqrt(dx * dx + dy * dy + dz * dz);
                     tentative_gScore = current->gScore + static_cost;

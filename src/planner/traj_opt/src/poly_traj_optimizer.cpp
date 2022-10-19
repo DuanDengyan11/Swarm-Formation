@@ -22,7 +22,7 @@ namespace ego_planner
     Eigen::Vector3d start_pos = iniState.col(0);
 
     double final_cost;
-    variable_num_ = 4 * (piece_num_ - 1) + 1;
+    variable_num_ = 4 * (piece_num_ - 1) + 1; //内部点坐标+时间坐标
 
     ros::Time t0 = ros::Time::now(), t1, t2;
     int restart_nums = 0, rebound_times = 0;
@@ -103,7 +103,7 @@ namespace ego_planner
     
     int N = traj.getPieceNum();
     int k = cps_num_prePiece_ * N + 1;
-    int idx = k / 3 * 2;
+    int idx = k / 3 * 2; //取前面2/3
     int piece_of_idx = floor((idx - 1) / cps_num_prePiece_);
     Eigen::VectorXd durations = traj.getDurations();
     T_end = durations.head(piece_of_idx).sum() 
@@ -117,7 +117,7 @@ namespace ego_planner
 
     for (int i=0; i<i_end; i++){
       Eigen::Vector3d pos = traj.getPos(t);
-      if(grid_map_->getInflateOccupancy(pos) == 1){
+      if(grid_map_->getInflateOccupancy(pos) == 1){ //检查是否和地图中的障碍物碰撞
         occ = true;
         break;
       }
@@ -156,6 +156,12 @@ namespace ego_planner
 
 
     opt->VirtualTGradCost(T, t, gradT, gradt, time_cost);
+
+    fstream process_file_;
+    process_file_.open(string("/home/tutu/peocess.txt"), ios::app);
+
+    process_file_ << opt->iter_num_ << "\t" <<obs_swarm_feas_qvar_costs(0) << "\t" <<obs_swarm_feas_qvar_costs(1) << "\t" << "\t" << obs_swarm_feas_qvar_costs(4) << "\t" <<obs_swarm_feas_qvar_costs(5) <<  obs_swarm_feas_qvar_costs(2) << "\t" <<obs_swarm_feas_qvar_costs(3) << "\t" << smoo_cost << "\t" << time_cost << "\n";
+  
 
     opt->iter_num_ += 1;
     return smoo_cost + obs_swarm_feas_qvar_costs.sum() + time_cost;
@@ -236,7 +242,7 @@ namespace ego_planner
     double omg;
     int i_dp = 0;
     costs.setZero();
-    double t = 0;
+    double t = 0; //global time
     // Eigen::MatrixXd constrain_pts(3, N * K + 1);
   
     // int innerLoop;
@@ -244,7 +250,7 @@ namespace ego_planner
     {
       const Eigen::Matrix<double, 6, 3> &c = jerkOpt_.get_b().block<6, 3>(i * 6, 0);
       step = jerkOpt_.get_T1()(i) / K;
-      s1 = 0.0;
+      s1 = 0.0; //local time
       // innerLoop = K;
 
       for (int j = 0; j <= K; ++j)
@@ -275,8 +281,37 @@ namespace ego_planner
           gdT(i) += omg * (costp / K + step * gradViolaPt);
           costs(0) += omg * step * costp;
         }
-        // swarm
+        
+        // to avoid cable collision and keep cable length  new add
         double gradt, grad_prev_t;
+        if (CableCollisionGradCostP(i_dp, t + step * j, pos, vel, gradp, gradt, grad_prev_t, costp))
+        {
+          gradViolaPc = beta0 * gradp.transpose();
+          gradViolaPt = alpha * gradt;
+          jerkOpt_.get_gdC().block<6, 3>(i * 6, 0) += omg * step * gradViolaPc;
+          gdT(i) += omg * (costp / K + step * gradViolaPt);
+          if (i > 0)
+          {
+            gdT.head(i).array() += omg * step * grad_prev_t;
+          }
+          costs(2) += omg * step * costp;
+        }
+
+        if (CableLengthGradCostP(i_dp, t + step * j, pos, vel, gradp, gradt, grad_prev_t, costp))
+        {
+          gradViolaPc = beta0 * gradp.transpose();
+          gradViolaPt = alpha * gradt;
+          jerkOpt_.get_gdC().block<6, 3>(i * 6, 0) += omg * step * gradViolaPc;
+          gdT(i) += omg * (costp / K + step * gradViolaPt);
+          if (i > 0)
+          {
+            gdT.head(i).array() += omg * step * grad_prev_t;
+          }
+          costs(3) += omg * step * costp;
+        }
+
+        // swarm
+        // double gradt, grad_prev_t;
         if (swarmGradCostP(i_dp, t + step * j, pos, vel, gradp, gradt, grad_prev_t, costp))
         {
           gradViolaPc = beta0 * gradp.transpose();
@@ -290,21 +325,21 @@ namespace ego_planner
           costs(1) += omg * step * costp;
         }
         // formation
-        if (use_formation_)
-        {
-          if (swarmGraphGradCostP(i_dp, t + step * j, pos, vel, gradp, gradt, grad_prev_t, costp))
-          {
-            gradViolaPc = beta0 * gradp.transpose();
-            gradViolaPt = alpha * gradt;
-            jerkOpt_.get_gdC().block<6, 3>(i * 6, 0) += omg * step * gradViolaPc;
-            gdT(i) += omg * (costp / K + step * gradViolaPt);
-            if (i > 0)
-            {
-              gdT.head(i).array() += omg * step * grad_prev_t;
-            }
-            costs(2) += omg * step * costp;
-          }
-        }
+        // if (use_formation_)
+        // {
+        //   if (swarmGraphGradCostP(i_dp, t + step * j, pos, vel, gradp, gradt, grad_prev_t, costp))
+        //   {
+        //     gradViolaPc = beta0 * gradp.transpose();
+        //     gradViolaPt = alpha * gradt;
+        //     jerkOpt_.get_gdC().block<6, 3>(i * 6, 0) += omg * step * gradViolaPc;
+        //     gdT(i) += omg * (costp / K + step * gradViolaPt);
+        //     if (i > 0)
+        //     {
+        //       gdT.head(i).array() += omg * step * grad_prev_t;
+        //     }
+        //     costs(2) += omg * step * costp;
+        //   }
+        // }
         // feasibility
         if (feasibilityGradCostV(vel, gradv, costv))
         {
@@ -331,7 +366,6 @@ namespace ego_planner
       }
       t += jerkOpt_.get_T1()(i);
     }
-
 
     // quratic variance
     Eigen::MatrixXd gdp;
@@ -458,6 +492,194 @@ namespace ego_planner
 
     return ret;
   }
+
+
+   bool PolyTrajOptimizer::CableLengthGradCostP(const int i_dp,
+                                         const double t,
+                                         const Eigen::Vector3d &p,
+                                         const Eigen::Vector3d &v,
+                                         Eigen::Vector3d &gradp,
+                                         double &gradt,
+                                         double &grad_prev_t,
+                                         double &costp)
+  {
+    if (i_dp <= 0 || i_dp >= cps_.cp_size * 2 / 3)
+      return false;
+    // if (i_dp <= 0)
+    //   return false;
+
+    bool ret = false;
+
+    gradp.setZero();
+    gradt = 0;
+    grad_prev_t = 0;
+    costp = 0;
+
+    const double CLEARANCE2 = (swarm_clearance_ * 1.5) * (swarm_clearance_ * 1.5);
+    constexpr double a = 2.0, b = 1.0, inv_a2 = 1 / a / a, inv_b2 = 1 / b / b;
+
+    double pt_time = t_now_ + t;
+
+    for (size_t id = 0; id < swarm_trajs_->size(); id++)
+    {
+      if ((swarm_trajs_->at(id).drone_id < 0) || swarm_trajs_->at(id).drone_id == drone_id_)
+      {
+        continue;
+      }
+
+      if (drone_id_>0 && swarm_trajs_->at(id).drone_id != 0) //默认drone_id=0是吊挂物，drone_id_>0是无人机 
+      {
+        continue;
+      }
+
+      // if (drone_id_ == 0)
+      // {
+      //   break;
+      // }
+
+      double traj_i_satrt_time = swarm_trajs_->at(id).start_time;
+
+      Eigen::Vector3d swarm_p, swarm_v;
+      if (pt_time < traj_i_satrt_time + swarm_trajs_->at(id).duration)
+      {
+        swarm_p = swarm_trajs_->at(id).traj.getPos(pt_time - traj_i_satrt_time);
+        swarm_v = swarm_trajs_->at(id).traj.getVel(pt_time - traj_i_satrt_time);
+      }
+      else
+      {
+        double exceed_time = pt_time - (traj_i_satrt_time + swarm_trajs_->at(id).duration);
+        swarm_v = swarm_trajs_->at(id).traj.getVel(swarm_trajs_->at(id).duration);
+        swarm_p = swarm_trajs_->at(id).traj.getPos(swarm_trajs_->at(id).duration) +
+                  exceed_time * swarm_v;
+      }
+
+      // to avoid cable collision
+      Eigen::Vector3d cable_vector = swarm_p - p;
+      double cable_current_length = cable_vector.norm();
+
+      // to keep cable length
+      double dist_cable_length_err = pow(cable_length_,2) - pow(cable_current_length,2);
+      if(dist_cable_length_err > cable_tolerance_)
+      {
+        ret = true;
+        costp += weight_cable_length_ * pow(dist_cable_length_err, 3);
+        Eigen::Vector3d dJ_dP = weight_cable_length_ * 3.0 * pow(dist_cable_length_err, 2) * (-2) * cable_vector * (-1);
+        gradp += dJ_dP;
+        gradt += dJ_dP.dot(v - swarm_v);
+        grad_prev_t += dJ_dP.dot(-swarm_v);
+      }else if(dist_cable_length_err < -cable_tolerance_)
+      {
+        ret = true;
+        costp += -weight_cable_length_ * pow(dist_cable_length_err, 3);
+        Eigen::Vector3d dJ_dP = -weight_cable_length_ * 3.0 * pow(dist_cable_length_err, 2) * (-2) * cable_vector * (-1);
+        gradp += dJ_dP;
+        gradt += dJ_dP.dot(v - swarm_v);
+        grad_prev_t += dJ_dP.dot(-swarm_v);
+      }
+
+    }
+
+    return ret;
+  }                                       
+
+ bool PolyTrajOptimizer::CableCollisionGradCostP(const int i_dp,
+                                         const double t,
+                                         const Eigen::Vector3d &p,
+                                         const Eigen::Vector3d &v,
+                                         Eigen::Vector3d &gradp,
+                                         double &gradt,
+                                         double &grad_prev_t,
+                                         double &costp)
+  {
+    if (i_dp <= 0 || i_dp >= cps_.cp_size * 2 / 3)
+      return false;
+    // if (i_dp <= 0)
+    //   return false;
+
+    bool ret = false;
+
+    gradp.setZero();
+    gradt = 0;
+    grad_prev_t = 0;
+    costp = 0;
+
+    const double CLEARANCE2 = (swarm_clearance_ * 1.5) * (swarm_clearance_ * 1.5);
+    constexpr double a = 2.0, b = 1.0, inv_a2 = 1 / a / a, inv_b2 = 1 / b / b;
+
+    double pt_time = t_now_ + t;
+
+    for (size_t id = 0; id < swarm_trajs_->size(); id++)
+    {
+      if ((swarm_trajs_->at(id).drone_id < 0) || swarm_trajs_->at(id).drone_id == drone_id_)
+      {
+        continue;
+      }
+
+      if (drone_id_>0 && swarm_trajs_->at(id).drone_id != 0) //默认drone_id=0是吊挂物，drone_id_>0是无人机 
+      {
+        continue;
+      }
+
+      // if (drone_id_ == 0)
+      // {
+      //   break;
+      // }
+
+      double traj_i_satrt_time = swarm_trajs_->at(id).start_time;
+
+      Eigen::Vector3d swarm_p, swarm_v;
+      if (pt_time < traj_i_satrt_time + swarm_trajs_->at(id).duration)
+      {
+        swarm_p = swarm_trajs_->at(id).traj.getPos(pt_time - traj_i_satrt_time);
+        swarm_v = swarm_trajs_->at(id).traj.getVel(pt_time - traj_i_satrt_time);
+      }
+      else
+      {
+        double exceed_time = pt_time - (traj_i_satrt_time + swarm_trajs_->at(id).duration);
+        swarm_v = swarm_trajs_->at(id).traj.getVel(swarm_trajs_->at(id).duration);
+        swarm_p = swarm_trajs_->at(id).traj.getPos(swarm_trajs_->at(id).duration) +
+                  exceed_time * swarm_v;
+      }
+
+      // to avoid cable collision
+      double cable_dis;
+      Eigen::Vector3d cable_vector = swarm_p - p;
+      double cable_current_length = cable_vector.norm();
+      Eigen::Vector3d cable_norm_vector = cable_vector / cable_current_length;
+      double cable_step = cable_current_length / cable_num_;
+      Eigen::Vector3d point_inline;
+      for (size_t i = 1; i < cable_num_; i++)
+      {
+        cable_dis = i * cable_step;
+        point_inline = p + cable_dis * cable_norm_vector; 
+
+        // use esdf
+        double dist;
+        grid_map_->evaluateEDT(point_inline, dist);
+
+        // cout<<"dist: "<<dist<<"obs_clearance_: "<<obs_clearance_<<endl;
+        // cout<<"point_inline: "<<point_inline<<endl;
+
+        double dist_err = obs_clearance_ - dist;
+        if (dist_err > 0)
+        {
+          ret = true;
+          Eigen::Vector3d dist_grad;
+          grid_map_->evaluateFirstGrad(point_inline, dist_grad);
+
+          costp += weight_cable_colli_ * pow(dist_err, 3);
+          Eigen::Vector3d dJ_dP = weight_cable_colli_ * 3.0 * pow(dist_err, 2) * (-1) * (Eigen::Matrix3d::Identity()-cable_dis*(Eigen::Matrix3d::Identity()-cable_norm_vector*cable_norm_vector.transpose())/cable_current_length).transpose() * dist_grad;
+          gradp += dJ_dP;
+          gradt += dJ_dP.dot(v - swarm_v);
+          grad_prev_t += dJ_dP.dot(-swarm_v);
+        }
+      }
+
+    }
+
+    return ret;
+  }
+
 
   bool PolyTrajOptimizer::obstacleGradCostP(const int i_dp,
                                             const Eigen::Vector3d &p,
@@ -626,8 +848,8 @@ namespace ego_planner
                                            Eigen::MatrixXd &ctl_points,
                                            poly_traj::MinJerkOpt &frontendMJ)
   {
-    Eigen::Vector3d start_pos = iniState.col(0);
-    Eigen::Vector3d end_pos = finState.col(0);
+    Eigen::Vector3d start_pos = iniState.col(0); //初始位置
+    Eigen::Vector3d end_pos = finState.col(0); //结束位置
 
     /* astar search and get the simple path*/
     simple_path = a_star_->astarSearchAndGetSimplePath(grid_map_->getResolution(), start_pos, end_pos);
@@ -743,6 +965,11 @@ namespace ego_planner
     nh.param("optimization/weight_sqrvariance", wei_sqrvar_, -1.0);
     nh.param("optimization/weight_time", wei_time_, -1.0);
     nh.param("optimization/weight_formation", wei_formation_, -1.0);
+    nh.param("optimization/cable_length", cable_length_, 2.0);
+    nh.param("optimization/cable_num", cable_num_, 10);
+    nh.param("optimization/weight_cable_length", weight_cable_length_, -1.0);
+    nh.param("optimization/weight_cable_colli", weight_cable_colli_, -1.0);
+    nh.param("optimization/cable_tolerance", cable_tolerance_, 0.01);
 
     nh.param("optimization/obstacle_clearance", obs_clearance_, -1.0);
     nh.param("optimization/swarm_clearance", swarm_clearance_, -1.0);

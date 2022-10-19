@@ -65,7 +65,8 @@ namespace ego_planner
     enum FORMATION_TYPE
     {
       NONE_FORMATION        = 0,
-      REGULAR_HEXAGON       = 1
+      REGULAR_HEXAGON       = 1,
+      TWIN_LIFT = 2
     };
 
     /* optimization parameters */
@@ -75,7 +76,12 @@ namespace ego_planner
     double wei_sqrvar_;                      // squared variance weight
     double wei_time_;                        // time weight
     double wei_formation_;                   // swarm formation simllarity
-    
+    double cable_length_;                    // cable length 
+    int cable_num_;
+    double weight_cable_length_;
+    double weight_cable_colli_;
+    double cable_tolerance_;
+
     double obs_clearance_;                   // safe distance between uav and obstacles
     double swarm_clearance_;                 // safe distance between uav and uav
     double max_vel_, max_acc_;               // dynamic limits
@@ -147,10 +153,28 @@ namespace ego_planner
     template <typename EIGENVEC>
     void addPVAGradCost2CT(EIGENVEC &gdT, Eigen::VectorXd &costs, const int &K);
 
+    bool CableCollisionGradCostP(const int i_dp,
+                                         const double t,
+                                         const Eigen::Vector3d &p,
+                                         const Eigen::Vector3d &v,
+                                         Eigen::Vector3d &gradp,
+                                         double &gradt,
+                                         double &grad_prev_t,
+                                         double &costp);
+
+    bool CableLengthGradCostP(const int i_dp,
+                                         const double t,
+                                         const Eigen::Vector3d &p,
+                                         const Eigen::Vector3d &v,
+                                         Eigen::Vector3d &gradp,
+                                         double &gradt,
+                                         double &grad_prev_t,
+                                         double &costp);
+
     bool obstacleGradCostP(const int i_dp,
                               const Eigen::Vector3d &p,
                               Eigen::Vector3d &gradp,
-                              double &costp);
+                              double &costp);            
     
     bool swarmGradCostP(const int i_dp,
                         const double t,
@@ -224,6 +248,13 @@ namespace ego_planner
           break;
         }
 
+        case FORMATION_TYPE::TWIN_LIFT :
+        {
+          use_formation_  = false;
+          formation_size_ = 3;
+          break;
+        }
+        
         default:
           break;
       }

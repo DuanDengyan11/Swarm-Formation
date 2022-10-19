@@ -233,6 +233,10 @@ void udp_recv_fun()
 
 int main(int argc, char **argv)
 {
+  //对udp不太懂 但大致能看懂意思 
+  //one_traj_sub_接收来自无人机的traj消息，保存到 udp_send_fd_ 并发送
+  //udp_recv_fun接收udp发送的数据并保存到 udp_server_fd_ , 判断消息类别后，通过 one_traj_pub_ 发布ros话题
+  //问题：为什么要通过udp传播？
   ros::init(argc, argv, "swarm_bridge");
   ros::NodeHandle nh("~");
 

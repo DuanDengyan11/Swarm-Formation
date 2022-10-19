@@ -62,13 +62,14 @@ namespace ego_planner
       vector<Eigen::Vector3d> simple_path;
       constexpr double init_of_init_totaldur = 2.0;
 
-      headState << start_pt, start_vel, start_acc;
-      tailState << local_target_pt, local_target_vel, Eigen::Vector3d::Zero();
+      headState << start_pt, start_vel, start_acc; //初始状态
+      tailState << local_target_pt, local_target_vel, Eigen::Vector3d::Zero(); //目标状态
 
       /* step 1: A* search and generate init traj */
       Eigen::MatrixXd ctl_points;
 
       // traj = ploy_traj_opt_->astarWithMinTraj(headState, tailState, simple_path, ctl_points);
+      //采用Astar算法产生初始轨迹
       ploy_traj_opt_->astarWithMinTraj(headState, tailState, simple_path, ctl_points, initMJO);
       traj = initMJO.getTraj();
 
@@ -177,6 +178,10 @@ namespace ego_planner
     }
   }
 
+        // desired_start_pt, desired_start_vel, desired_start_acc,
+        // desired_start_time, local_target_pt_, local_target_vel_,
+        // (have_new_target_ || flag_use_poly_init),
+        // flag_randomPolyTraj, use_formation, have_local_traj_);
   bool EGOPlannerManager::reboundReplan(
       const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_vel, const Eigen::Vector3d &start_acc,
       const double trajectory_start_time, const Eigen::Vector3d &local_target_pt, const Eigen::Vector3d &local_target_vel,
@@ -197,7 +202,7 @@ namespace ego_planner
     ros::Duration t_init, t_opt;
 
     /*** STEP 1: INIT ***/
-    double ts = pp_.polyTraj_piece_length / pp_.max_vel_;
+    double ts = pp_.polyTraj_piece_length / pp_.max_vel_; //init总时长，假设速度最大
 
    
     poly_traj::MinJerkOpt initMJO;
@@ -295,11 +300,12 @@ namespace ego_planner
     if (traj_.local_traj.start_time < 1e9) // It means my first planning has not started
       return false;
 
-    double my_traj_start_time = traj_.local_traj.start_time;
-    double other_traj_start_time = traj_.swarm_traj[drone_id].start_time;
+    double my_traj_start_time = traj_.local_traj.start_time; //当前无人机轨迹开始时间
+    double other_traj_start_time = traj_.swarm_traj[drone_id].start_time; //drone_id无人机轨迹开始时间
 
-    double t_start = max(my_traj_start_time, other_traj_start_time);
-    double t_end = min(my_traj_start_time + traj_.local_traj.duration * 2 / 3,
+    //轨迹重叠时间
+    double t_start = max(my_traj_start_time, other_traj_start_time); 
+    double t_end = min(my_traj_start_time + traj_.local_traj.duration * 2 / 3, //为啥要乘上2/3
                        other_traj_start_time + traj_.swarm_traj[drone_id].duration);
 
     for (double t = t_start; t < t_end; t += 0.03)

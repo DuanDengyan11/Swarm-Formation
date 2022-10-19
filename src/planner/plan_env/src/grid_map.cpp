@@ -86,7 +86,7 @@ void GridMap::initMap(ros::NodeHandle &nh)
     mp_.virtual_ceil_height_ = z_size + mp_.ground_height_ - mp_.resolution_;
   }
 
-  // initialize data buffers
+  // initialize data buffers 
 
   int buffer_size = mp_.map_voxel_num_(0) * mp_.map_voxel_num_(1) * mp_.map_voxel_num_(2);
 
@@ -121,7 +121,7 @@ void GridMap::initMap(ros::NodeHandle &nh)
   extrinsic_sub_ = node_.subscribe<nav_msgs::Odometry>(
       "/vins_estimator/extrinsic", 10, &GridMap::extrinsicCallback, this); //sub
   
-  if (mp_.pose_type_ == POSE_STAMPED)
+  if (mp_.pose_type_ == POSE_STAMPED)//目前等于1
   {
     pose_sub_.reset(
         new message_filters::Subscriber<geometry_msgs::PoseStamped>(node_, "grid_map/pose", 25));

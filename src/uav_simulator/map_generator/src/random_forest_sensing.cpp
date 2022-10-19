@@ -396,6 +396,7 @@ void pubPoints()
 
 int main(int argc, char **argv)
 {
+  //根据输入参数随机生成地图（一些树和圆） 并通过 _all_map_pub 发布
   ros::init(argc, argv, "random_map_sensing");
   ros::NodeHandle n("~");
 

@@ -37,7 +37,7 @@
     <!-- number of moving objects -->
     <!-- <arg name="obj_num" value="8" /> -->
     <!-- main algorithm params -->
-    <include file="$(find ego_planner)/launch/advanced_param.xml">
+    <include file="$(find ego_planner)/launch/advanced_param_lift.xml">
         <arg name="drone_id"                value="$(arg drone_id)"/>
         <!-- <arg name="formation_type"          value="$(arg formation_type)"/> -->
         <arg name="map_size_x_"             value="$(arg map_size_x)"/>

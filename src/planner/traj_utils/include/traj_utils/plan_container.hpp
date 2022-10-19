@@ -12,14 +12,14 @@ using std::vector;
 namespace ego_planner
 {
 
-  struct GlobalTrajData
+  struct GlobalTrajData //全局
   {
     poly_traj::Trajectory traj;
     double global_start_time; // world time
     double duration;
 
     /* Global traj time. 
-       The corresponding global trajectory time of the current local target.
+       The corresponding global trajectory time of the current local target. 当前局部目标对应的全局轨迹时间
        Used in local target selection process */
     double glb_t_of_lc_tgt;
     /* Global traj time. 
@@ -28,7 +28,7 @@ namespace ego_planner
     double last_glb_t_of_lc_tgt;
   };
 
-  struct LocalTrajData
+  struct LocalTrajData //本机
   {
     poly_traj::Trajectory traj;
     int drone_id; // A negative value indicates no received trajectories.
@@ -39,7 +39,7 @@ namespace ego_planner
     Eigen::Vector3d start_pos;
   };
 
-  typedef std::vector<LocalTrajData> SwarmTrajData;
+  typedef std::vector<LocalTrajData> SwarmTrajData; //除本机之外其他无人机的数据
 
   class TrajContainer
   {

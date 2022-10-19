@@ -42,7 +42,7 @@ void pubOdom()
 		R.col(0) = xB;
 		R.col(1) = yB;
 		R.col(2) = zB;
-		Eigen::Quaterniond q(R);
+		Eigen::Quaterniond q(R);  //居然还能生成四元数
 	    odom.pose.pose.orientation.w = q.w();
 	    odom.pose.pose.orientation.x = q.x();
 	    odom.pose.pose.orientation.y = q.y();
@@ -80,7 +80,9 @@ void pubOdom()
 }
 
 int main (int argc, char** argv) 
-{        
+{   
+	//由command发送来的数据进行处理
+	//相比command多了四元数，通过 _odom_pub 发布话题     
     ros::init (argc, argv, "odom_generator");
     ros::NodeHandle nh( "~" );
 
@@ -95,7 +97,7 @@ int main (int argc, char** argv)
     bool status = ros::ok();
     while(status) 
     {
-		pubOdom();                   
+		pubOdom();                 
         ros::spinOnce();
         status = ros::ok();
         rate.sleep();

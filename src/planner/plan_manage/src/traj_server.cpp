@@ -305,7 +305,7 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "traj_server");
   // ros::NodeHandle node;
-  ros::NodeHandle nh("~");
+  ros::NodeHandle nh("~"); //发布的话题名为节点名/定义的话题名
   // get drone num
   std::string name_drone = ros::this_node::getName();
   std::vector<std::string> v{explode(name_drone, '_')};

@@ -68,6 +68,7 @@ namespace ego_planner
     bool enable_fail_safe_;
     int last_end_id_;
     double replan_trajectory_time_;
+    int cable_collision_open_;
 
      // global goal setting for swarm
     Eigen::Vector3d swarm_central_pos_;

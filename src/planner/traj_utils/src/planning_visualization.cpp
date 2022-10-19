@@ -212,6 +212,16 @@ namespace ego_planner
       
       break;
     }
+
+    case FORMATION_TYPE::TWIN_LIFT:
+    {
+      formation_size_ = 3;
+      line_size_      = 2;
+      line_begin_.resize(line_size_);
+      line_end_.resize(line_size_);
+      line_begin_ = {0, 0};
+      line_end_   = {1, 2};
+    }
     
     default:
       break;

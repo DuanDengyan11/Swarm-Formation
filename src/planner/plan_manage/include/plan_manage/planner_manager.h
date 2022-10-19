@@ -49,7 +49,8 @@ namespace ego_planner
     void initPlanModules(ros::NodeHandle &nh, PlanningVisualization::Ptr vis = NULL);
     bool EmergencyStop(Eigen::Vector3d stop_pos);
 
-    void deliverTrajToOptimizer(void) { ploy_traj_opt_->setSwarmTrajs(&traj_.swarm_traj); };
+    void deliverTrajToOptimizer(void) { ploy_traj_opt_->setSwarmTrajs(&
+    traj_.swarm_traj); };
 
     void setDroneIdtoOpt(void) { ploy_traj_opt_->setDroneId(pp_.drone_id); }
 
