@@ -93,10 +93,12 @@ namespace ego_planner
 
     double t_now_;
 
+    fstream process_file_;
+
   public:
 
-    PolyTrajOptimizer() {}
-    ~PolyTrajOptimizer() {}
+    PolyTrajOptimizer() {process_file_.open(string("/home/oem/ddy/process.txt"), ios::app);}
+    ~PolyTrajOptimizer() {    process_file_.close();}
 
     /* set variables */
     void setParam(ros::NodeHandle &nh);
