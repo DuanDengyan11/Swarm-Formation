@@ -507,7 +507,7 @@ namespace ego_planner
       return false;
     // if (i_dp <= 0)
     //   return false;
-
+//tutushige
     bool ret = false;
 
     gradp.setZero();
