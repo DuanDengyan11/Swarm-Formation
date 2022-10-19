@@ -93,7 +93,6 @@ namespace ego_planner
 
     double t_now_;
 
-    fstream process_file_;
 
   public:
 
