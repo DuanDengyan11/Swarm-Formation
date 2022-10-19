@@ -62,7 +62,7 @@ private:
 	
 	inline bool checkOccupancy(const Eigen::Vector3d &pos) { return (bool)grid_map_->getInflateOccupancy(pos); }
 	inline bool checkOccupancy_esdf(const Eigen::Vector3d &pos){
-		const double dist = 2.5;
+		const double dist = 0.2;
 		if (grid_map_->getDistance(pos) < dist ) 
 			return true;
 		else
