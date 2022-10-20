@@ -17,11 +17,11 @@ global_goal:
 # map_size_z          : 3.0
 optimization:
   formation_type      : 2
-  weight_obstacle     : 0.0
-  weight_swarm        : 0.0
-  weight_feasibility  : 0.0
-  weight_sqrvariance  : 0.0
-  weight_time         : 0.0
+  weight_obstacle     : 50000.0
+  weight_swarm        : 50000.0
+  weight_feasibility  : 10000.0
+  weight_sqrvariance  : 10000.0
+  weight_time         : 80.0
   weight_formation    : 0.0
   obstacle_clearance  : 0.5
   swarm_clearance     : 0.5
