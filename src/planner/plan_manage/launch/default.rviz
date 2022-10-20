@@ -185,7 +185,7 @@ Visualization Manager:
               Queue Size: 100
               Value: false
             - Class: rviz/Marker
-              Enabled: false
+              Enabled: true
               Marker Topic: /drone_0_ego_planner_node/a_star_list
               Name: AStar
               Namespaces:
@@ -348,7 +348,7 @@ Visualization Manager:
               Queue Size: 100
               Value: true
             - Class: rviz/Marker
-              Enabled: false
+              Enabled: true
               Marker Topic: /drone_1_ego_planner_node/a_star_list
               Name: AStar
               Namespaces:
@@ -475,7 +475,7 @@ Visualization Manager:
               Queue Size: 100
               Value: true
             - Class: rviz/Marker
-              Enabled: false
+              Enabled: true
               Marker Topic: drone_2_ego_planner_node/a_star_list
               Name: AStar
               Namespaces:
