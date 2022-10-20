@@ -557,7 +557,7 @@ namespace ego_planner
 
       // to keep cable length
       double dist_cable_length_err = pow(cable_length_,2) - pow(cable_current_length,2);
-      if(dist_cable_length_err.norm() > cable_tolerance_ )
+      if(abs(dist_cable_length_err) > cable_tolerance_)
       {
         ret = true;
         costp += weight_cable_length_ * pow(dist_cable_length_err, 2);
