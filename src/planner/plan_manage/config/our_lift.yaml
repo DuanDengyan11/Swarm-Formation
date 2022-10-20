@@ -28,7 +28,7 @@ optimization:
   cable_length        : 2.1213203435596424
   cable_num           : 10
   weight_cable_length : 500.0
-  weight_cable_colli  : 5000.0
+  weight_cable_colli  : 0.0
   cable_tolerance     : 0.05
 
 fsm:
