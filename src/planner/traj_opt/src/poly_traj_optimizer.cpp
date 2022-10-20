@@ -560,16 +560,8 @@ namespace ego_planner
       if(dist_cable_length_err > cable_tolerance_)
       {
         ret = true;
-        costp += weight_cable_length_ * pow(dist_cable_length_err, 3);
-        Eigen::Vector3d dJ_dP = weight_cable_length_ * 3.0 * pow(dist_cable_length_err, 2) * (-2) * cable_vector * (-1);
-        gradp += dJ_dP;
-        gradt += dJ_dP.dot(v - swarm_v);
-        grad_prev_t += dJ_dP.dot(-swarm_v);
-      }else if(dist_cable_length_err < -cable_tolerance_)
-      {
-        ret = true;
-        costp += -weight_cable_length_ * pow(dist_cable_length_err, 3);
-        Eigen::Vector3d dJ_dP = -weight_cable_length_ * 3.0 * pow(dist_cable_length_err, 2) * (-2) * cable_vector * (-1);
+        costp += weight_cable_length_ * pow(dist_cable_length_err, 2);
+        Eigen::Vector3d dJ_dP = weight_cable_length_ * 2.0 * dist_cable_length_err * (-2) * cable_vector * (-1);
         gradp += dJ_dP;
         gradt += dJ_dP.dot(v - swarm_v);
         grad_prev_t += dJ_dP.dot(-swarm_v);
