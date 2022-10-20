@@ -159,7 +159,7 @@ namespace ego_planner
 
     fstream process_file_;
     process_file_.open(string("/home/oem/ddy/process.txt"), ios::app);
-    process_file_ << fixed << setprecision(2) <<opt->iter_num_ << "\t" <<obs_swarm_feas_qvar_costs(0) << "\t" <<obs_swarm_feas_qvar_costs(1) << "\t" << "\t" << obs_swarm_feas_qvar_costs(4) << "\t" <<obs_swarm_feas_qvar_costs(5) <<  obs_swarm_feas_qvar_costs(2) << "\t" <<obs_swarm_feas_qvar_costs(3) << "\t" << smoo_cost << "\t" << time_cost << "\n";
+    process_file_ << fixed << setprecision(2) <<opt->iter_num_ << "\t" <<obs_swarm_feas_qvar_costs(0) << "\t" <<obs_swarm_feas_qvar_costs(1) << "\t" << obs_swarm_feas_qvar_costs(4) << "\t" <<obs_swarm_feas_qvar_costs(5) <<  "\t" <<  obs_swarm_feas_qvar_costs(2) << "\t" <<obs_swarm_feas_qvar_costs(3) << "\t" << smoo_cost << "\t" << time_cost << "\t" << smoo_cost + obs_swarm_feas_qvar_costs.sum() + time_cost << "\n";
 
     opt->iter_num_ += 1;
     return smoo_cost + obs_swarm_feas_qvar_costs.sum() + time_cost;
