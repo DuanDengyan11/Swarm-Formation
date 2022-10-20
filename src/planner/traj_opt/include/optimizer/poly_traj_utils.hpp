@@ -1355,9 +1355,10 @@ namespace poly_traj
 
             gdT.setZero();
             gdC.setZero();
-            cost = getTrajJerkCost();
-            addGradJbyT(gdT);
-            addGradJbyC(gdC);
+            cost = 0.0;
+            // cost = getTrajJerkCost();
+            // addGradJbyT(gdT);
+            // addGradJbyC(gdC);
         }
 
         template <typename EIGENVEC, typename EIGENMAT>
