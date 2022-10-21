@@ -557,15 +557,15 @@ namespace ego_planner
 
       // to keep cable length
       double dist_cable_length_err = pow(cable_length_,2) - pow(cable_current_length,2);
-      if(abs(dist_cable_length_err) > cable_tolerance_)
-      {
+      // if(abs(dist_cable_length_err) > cable_tolerance_)
+      // {
         ret = true;
         costp += weight_cable_length_ * pow(dist_cable_length_err, 2);
         Eigen::Vector3d dJ_dP = weight_cable_length_ * 2.0 * dist_cable_length_err * (-2) * cable_vector * (-1);
         gradp += dJ_dP;
         gradt += dJ_dP.dot(v - swarm_v);
         grad_prev_t += dJ_dP.dot(-swarm_v);
-      }
+      // }
 
     }
 
