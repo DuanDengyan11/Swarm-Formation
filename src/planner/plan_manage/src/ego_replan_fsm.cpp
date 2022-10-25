@@ -10,42 +10,42 @@ namespace ego_planner
   }
   void EGOReplanFSM::init(ros::NodeHandle &nh)
   {
-    current_wp_ = 0;
-    exec_state_ = FSM_EXEC_STATE::INIT;
-    have_target_ = false;
-    have_odom_ = false;
-    have_recv_pre_agent_ = false;
+ 
+    exec_state_ = FSM_EXEC_STATE::INIT;  //初始设置执行器为INIT
+    have_target_ = false; //是否接收到目标位置点
+    have_odom_ = false;  //是否有里程计数据
+    have_recv_pre_agent_ = false; // have receive previous agent
     flag_escape_emergency_ = true;
-    flag_relan_astar_ = false;
-    have_local_traj_ = false;
+    flag_relan_astar_ = false; // 重新执行A_star算法
+    have_local_traj_ = false; // 有没有上次规划好的local轨迹
 
     /*  fsm param  */
-    nh.param("fsm/flight_type", target_type_, -1);
-    nh.param("fsm/thresh_replan_time", replan_thresh_, -1.0);
-    nh.param("fsm/thresh_no_replan_meter", no_replan_thresh_, -1.0);
-    nh.param("fsm/planning_horizon", planning_horizen_, -1.0);
-    nh.param("fsm/planning_horizen_time", planning_horizen_time_, -1.0);
-    nh.param("fsm/emergency_time", emergency_time_, 1.0);
-    nh.param("fsm/realworld_experiment", flag_realworld_experiment_, false);
-    nh.param("fsm/fail_safe", enable_fail_safe_, true);
-    nh.param("fsm/result_file", result_fn_, string("/home/zuzu/Documents/Benchmark/21-RSS-ego-swarm/2.24/ego/ego_swarm.txt"));
-    nh.param("fsm/replan_trajectory_time", replan_trajectory_time_, 0.0);
-    nh.param("fsm/cable_collision", cable_collision_open_, 0);
+    nh.param("fsm/flight_type", target_type_, -1);  // flight_type=3 给出了队形
+    nh.param("fsm/thresh_replan_time", replan_thresh_, -1.0);  // = 1s
+    nh.param("fsm/thresh_no_replan_meter", no_replan_thresh_, -1.0); // = 1m
+    nh.param("fsm/planning_horizon", planning_horizen_, -1.0); // = 7.5m
+    nh.param("fsm/planning_horizen_time", planning_horizen_time_, -1.0); // = 3s
+    nh.param("fsm/emergency_time", emergency_time_, 1.0); // = 1s
+    nh.param("fsm/realworld_experiment", flag_realworld_experiment_, false); // = false
+    nh.param("fsm/fail_safe", enable_fail_safe_, true); // = true
+    nh.param("fsm/result_file", result_fn_, string("/home/zuzu/Documents/Benchmark/21-RSS-ego-swarm/2.24/ego/ego_swarm.txt")); // 保存结果文件的地方
+    nh.param("fsm/replan_trajectory_time", replan_trajectory_time_, 0.0); // = 0.0s
+    nh.param("fsm/cable_collision", cable_collision_open_, 0); // 是否打开绳索碰撞检查 最后肯定是要打开的，看情况去掉这个判断
 
-    have_trigger_ = !flag_realworld_experiment_;
+    have_trigger_ = !flag_realworld_experiment_;  // = true
 
-    nh.param("fsm/waypoint_num", waypoint_num_, -1);
+    nh.param("fsm/waypoint_num", waypoint_num_, -1);  // point_num = 1
     for (int i = 0; i < waypoint_num_; i++)
     {
-      nh.param("fsm/waypoint" + to_string(i) + "_x", waypoints_[i][0], -1.0);
+      nh.param("fsm/waypoint" + to_string(i) + "_x", waypoints_[i][0], -1.0); // x y z都等于0
       nh.param("fsm/waypoint" + to_string(i) + "_y", waypoints_[i][1], -1.0);
       nh.param("fsm/waypoint" + to_string(i) + "_z", waypoints_[i][2], -1.0);
     }
 
-    nh.param("fsm/goal_num", goal_num_, -1);
+    nh.param("fsm/goal_num", goal_num_, -1); // =0
     for (int i = 0; i < goal_num_; i++)
     {
-      nh.param("fsm/target" + to_string(i) + "_x", goalpoints_[i][0], -1.0);
+      nh.param("fsm/target" + to_string(i) + "_x", goalpoints_[i][0], -1.0); //后面没有用
       nh.param("fsm/target" + to_string(i) + "_y", goalpoints_[i][1], -1.0);
       nh.param("fsm/target" + to_string(i) + "_z", goalpoints_[i][2], -1.0);
     }
@@ -55,9 +55,9 @@ namespace ego_planner
       nh.param("global_goal/relative_pos_" + to_string(i) + "/x", swarm_relative_pts_[i][0], -1.0);
       nh.param("global_goal/relative_pos_" + to_string(i) + "/y", swarm_relative_pts_[i][1], -1.0);
       nh.param("global_goal/relative_pos_" + to_string(i) + "/z", swarm_relative_pts_[i][2], -1.0);
-    }
+    } //相对目标点的位置
 
-    nh.param("global_goal/swarm_scale", swarm_scale_, 1.0);
+    nh.param("global_goal/swarm_scale", swarm_scale_, 1.0); // = 1.0
 
     /* initialize main modules */
     visualization_.reset(new PlanningVisualization(nh));
