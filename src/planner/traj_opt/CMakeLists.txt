@@ -18,13 +18,12 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   traj_utils
   path_searching
-  swarm_graph
 )
 
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES traj_opt
- CATKIN_DEPENDS plan_env swarm_graph
+ CATKIN_DEPENDS plan_env
 #  DEPENDS system_lib
 )
 

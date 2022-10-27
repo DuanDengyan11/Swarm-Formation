@@ -11,53 +11,30 @@ namespace ego_planner
   void EGOReplanFSM::init(ros::NodeHandle &nh)
   {
  
-    exec_state_ = FSM_EXEC_STATE::INIT;  //初始设置执行器为INIT
     have_target_ = false; //是否接收到目标位置点
     have_odom_ = false;  //是否有里程计数据
-    have_recv_pre_agent_ = false; // have receive previous agent
-    flag_escape_emergency_ = true;
-    flag_relan_astar_ = false; // 重新执行A_star算法
     have_local_traj_ = false; // 有没有上次规划好的local轨迹
 
     /*  fsm param  */
-    nh.param("fsm/flight_type", target_type_, -1);  // flight_type=3 给出了队形
     nh.param("fsm/thresh_replan_time", replan_thresh_, -1.0);  // = 1s
     nh.param("fsm/thresh_no_replan_meter", no_replan_thresh_, -1.0); // = 1m
     nh.param("fsm/planning_horizon", planning_horizen_, -1.0); // = 7.5m
     nh.param("fsm/planning_horizen_time", planning_horizen_time_, -1.0); // = 3s
-    nh.param("fsm/emergency_time", emergency_time_, 1.0); // = 1s
     nh.param("fsm/realworld_experiment", flag_realworld_experiment_, false); // = false
-    nh.param("fsm/fail_safe", enable_fail_safe_, true); // = true
     nh.param("fsm/result_file", result_fn_, string("/home/zuzu/Documents/Benchmark/21-RSS-ego-swarm/2.24/ego/ego_swarm.txt")); // 保存结果文件的地方
-    nh.param("fsm/replan_trajectory_time", replan_trajectory_time_, 0.0); // = 0.0s
-    nh.param("fsm/cable_collision", cable_collision_open_, 0); // 是否打开绳索碰撞检查 最后肯定是要打开的，看情况去掉这个判断
+    nh.param("fsm/replan_trajectory_time", replan_trajectory_time_, 0.0); // = 0.1s
 
     have_trigger_ = !flag_realworld_experiment_;  // = true
 
-    nh.param("fsm/waypoint_num", waypoint_num_, -1);  // point_num = 1
-    for (int i = 0; i < waypoint_num_; i++)
-    {
-      nh.param("fsm/waypoint" + to_string(i) + "_x", waypoints_[i][0], -1.0); // x y z都等于0
-      nh.param("fsm/waypoint" + to_string(i) + "_y", waypoints_[i][1], -1.0);
-      nh.param("fsm/waypoint" + to_string(i) + "_z", waypoints_[i][2], -1.0);
-    }
-
-    nh.param("fsm/goal_num", goal_num_, -1); // =0
-    for (int i = 0; i < goal_num_; i++)
-    {
-      nh.param("fsm/target" + to_string(i) + "_x", goalpoints_[i][0], -1.0); //后面没有用
-      nh.param("fsm/target" + to_string(i) + "_y", goalpoints_[i][1], -1.0);
-      nh.param("fsm/target" + to_string(i) + "_z", goalpoints_[i][2], -1.0);
-    }
+    nh.param("global_goal/cable_length", cable_length_, 1.0);
+    nh.param("global_goal/m_load", m_load_, 1.0);
 
     for (int i = 0; i < 7; i++)
     {
-      nh.param("global_goal/relative_pos_" + to_string(i) + "/x", swarm_relative_pts_[i][0], -1.0);
-      nh.param("global_goal/relative_pos_" + to_string(i) + "/y", swarm_relative_pts_[i][1], -1.0);
-      nh.param("global_goal/relative_pos_" + to_string(i) + "/z", swarm_relative_pts_[i][2], -1.0);
+      nh.param("global_goal/Fcable_" + to_string(i) + "/x", Fcable_[i][1], 2.0);
+      nh.param("global_goal/Fcable_" + to_string(i) + "/y", Fcable_[i][2], 45.0);
+      nh.param("global_goal/Fcable_" + to_string(i) + "/z", Fcable_[i][3], 0.0);
     } //相对目标点的位置
-
-    nh.param("global_goal/swarm_scale", swarm_scale_, 1.0); // = 1.0
 
     /* initialize main modules */
     visualization_.reset(new PlanningVisualization(nh));
@@ -67,405 +44,36 @@ namespace ego_planner
     planner_manager_->setDroneIdtoOpt();
 
     /* callback */
-    exec_timer_ = nh.createTimer(ros::Duration(0.01), &EGOReplanFSM::execFSMCallback, this);
-    safety_timer_ = nh.createTimer(ros::Duration(0.05), &EGOReplanFSM::checkCollisionCallback, this);
+    exec_timer_ = nh.createTimer(ros::Duration(0.01), &EGOReplanFSM::execFSMCallback, this); //主程序 先优化吊挂物轨迹 然后优化上面的绳索
 
-    odom_sub_ = nh.subscribe("odom_world", 1, &EGOReplanFSM::odometryCallback, this);
+    odom_sub_ = nh.subscribe("odom_world", 1, &EGOReplanFSM::odometryCallback, this); //接收到的odom消息，our_lift中我们设定为吊挂物当前位置
 
-    broadcast_ploytraj_pub_ = nh.advertise<traj_utils::PolyTraj>("planning/broadcast_traj_send", 10); //向swarm_bridge发布轨迹
-    broadcast_ploytraj_sub_ = nh.subscribe<traj_utils::PolyTraj>("planning/broadcast_traj_recv", 100, //接收swarm_bridge发来的其他无人机轨迹
-                                                                 &EGOReplanFSM::RecvBroadcastPolyTrajCallback,
-                                                                 this,
-                                                                 ros::TransportHints().tcpNoDelay());
-
+    //要发给odom的 
     poly_traj_pub_ = nh.advertise<traj_utils::PolyTraj>("planning/trajectory", 10);
-    data_disp_pub_ = nh.advertise<traj_utils::DataDisp>("planning/data_display", 100);
-
     start_pub_ = nh.advertise<std_msgs::Bool>("planning/start", 1);
     reached_pub_ = nh.advertise<std_msgs::Bool>("planning/finish", 1);
 
+    //记录优化结果
     result_file_.open(result_fn_, ios::app);
 
-    if (target_type_ == TARGET_TYPE::MANUAL_TARGET)
-    {
-      waypoint_sub_ = nh.subscribe("/goal", 1, &EGOReplanFSM::waypointCallback, this);
-    }
-    else if (target_type_ == TARGET_TYPE::PRESET_TARGET)
-    {
-      trigger_sub_ = nh.subscribe("/traj_start_trigger", 1, &EGOReplanFSM::triggerCallback, this);
-      ROS_INFO("Wait for 2 second.");
-      int count = 0;
-      while (ros::ok() && count++ < 2000)
-      {
-        ros::spinOnce();
-        ros::Duration(0.001).sleep();
-      }
-      ROS_WARN("Waiting for trigger from [n3ctrl] from RC");
+    central_goal = nh.subscribe("/move_base_simple/goal", 1, &EGOReplanFSM::formationWaypointCallback, this); //地图上鼠标发来的目标位置
 
-      while (ros::ok() && (!have_odom_ || !have_trigger_))
-      {
-        ros::spinOnce();
-        ros::Duration(0.001).sleep();
-      }
-      std_msgs::Bool flag_msg;
-      flag_msg.data = true;
-      planner_manager_->global_start_time_ = ros::Time::now();
-      planner_manager_->start_flag_ = true;
-      start_pub_.publish(flag_msg);
-      planGlobalTrajbyGivenWps();
-    }
-    else if (target_type_ == TARGET_TYPE::SWARM_MANUAL_TARGET)
-    {
-      central_goal = nh.subscribe("/move_base_simple/goal", 1, &EGOReplanFSM::formationWaypointCallback, this);
-    }
-    cout << "Wrong target_type_ value! target_type_=" << target_type_ << endl;
   }
 
   void EGOReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   {
+
+    ROS_INFO("have_odom_ %ld, have_target_ %ld", have_odom_, have_target_);
+
     exec_timer_.stop(); // To avoid blockage
 
-    static int fsm_num = 0;
-    fsm_num++;
-    if (fsm_num == 100)
-    {
-      fsm_num = 0;
-      // printFSMExecState();
-    }
+    if(!have_odom_ || !have_target_)
+      return;
+    
+    planFromGlobalTraj(1);  //plan load trajectory from global trajectory
 
-    switch (exec_state_)
-    {
-    case INIT:
-    {
-      if (!have_odom_)
-      {
-        goto force_return; // return;
-      }
-      changeFSMExecState(WAIT_TARGET, "FSM");
-      break;
-    }
-
-    case WAIT_TARGET:
-    {
-      if (!have_target_)
-        goto force_return; // return;
-      else
-      {
-        changeFSMExecState(SEQUENTIAL_START, "FSM");
-      }
-      break;
-    }
-
-    case SEQUENTIAL_START: // for swarm or single drone with drone_id = 0
-    {
-      if (planner_manager_->pp_.drone_id <= 0 || (planner_manager_->pp_.drone_id >= 1 && have_recv_pre_agent_))
-      {
-        bool success = planFromGlobalTraj(1);
-
-        if (success)
-        {
-          changeFSMExecState(EXEC_TRAJ, "FSM");
-        }
-        else
-        {
-          ROS_ERROR("Failed to generate the first trajectory!!!");
-          changeFSMExecState(SEQUENTIAL_START, "FSM");
-        }
-      }
-
-      break;
-    }
-
-    case GEN_NEW_TRAJ:
-    {
-      bool success = planFromGlobalTraj(1);
-      if (success)
-      {
-        changeFSMExecState(EXEC_TRAJ, "FSM");
-        flag_escape_emergency_ = true;
-      }
-      else
-      {
-        have_target_ = false;
-        changeFSMExecState(WAIT_TARGET, "FSM");
-      }
-      break;
-    }
-
-    case REPLAN_TRAJ:
-    {
-      bool success;
-      if (flag_relan_astar_)
-        success = planFromLocalTraj(true, false);
-      else
-        success = planFromLocalTraj(false, true);
-
-      if (success)
-      {
-        flag_relan_astar_ = false;
-        changeFSMExecState(EXEC_TRAJ, "FSM");
-      }
-      else
-      {
-        flag_relan_astar_ = true;
-        changeFSMExecState(REPLAN_TRAJ, "FSM");
-      }
-
-      break;
-    }
-
-    case EXEC_TRAJ:
-    {
-      /* determine if need to replan */
-      LocalTrajData *info = &planner_manager_->traj_.local_traj;
-      double t_cur = ros::Time::now().toSec() - info->start_time;
-      t_cur = min(info->duration, t_cur);
-
-      Eigen::Vector3d pos = info->traj.getPos(t_cur);
-
-      if ((local_target_pt_ - end_pt_).norm() < 0.1) // local target close to the global target
-      {
-        if (t_cur > info->duration - 0.2)
-        {
-          have_target_ = false;
-          have_local_traj_ = false;
-
-          /* The navigation task completed */
-          changeFSMExecState(WAIT_TARGET, "FSM");
-
-          result_file_ << planner_manager_->pp_.drone_id << "\t" << (ros::Time::now() - planner_manager_->global_start_time_).toSec() << "\t" << planner_manager_->average_plan_time_ << "\n";
-
-          printf("\033[47;30m\n[drone %d reached goal]==============================================\033[0m\n",
-                 planner_manager_->pp_.drone_id);
-          std_msgs::Bool msg;
-          msg.data = true;
-          reached_pub_.publish(msg);
-          goto force_return;
-        }
-        else if ((end_pt_ - pos).norm() > no_replan_thresh_ && t_cur > replan_thresh_)
-        {
-          changeFSMExecState(REPLAN_TRAJ, "FSM");
-        }
-      }
-      else if (t_cur > replan_thresh_)
-      {
-        changeFSMExecState(REPLAN_TRAJ, "FSM");
-      }
-
-      break;
-    }
-
-    case EMERGENCY_STOP:
-    {
-      if (flag_escape_emergency_) // Avoiding repeated calls
-      {
-        callEmergencyStop(odom_pos_);
-      }
-      else
-      {
-        if (enable_fail_safe_ && odom_vel_.norm() < 0.1)
-          changeFSMExecState(GEN_NEW_TRAJ, "FSM");
-      }
-
-      flag_escape_emergency_ = false;
-
-      break;
-    }
-    }
-
-    data_disp_.header.stamp = ros::Time::now();
-    data_disp_pub_.publish(data_disp_);
-
-  force_return:;
+    force_return:;
     exec_timer_.start();
-  }
-
-  void EGOReplanFSM::checkCollisionCallback(const ros::TimerEvent &e)
-  {
-
-    LocalTrajData *info = &planner_manager_->traj_.local_traj; //当前无人机轨迹
-    auto map = planner_manager_->grid_map_; //地图
-
-    if (exec_state_ == WAIT_TARGET || info->traj_id <= 0)
-      return;
-
-    /* ---------- check lost of depth ---------- 检查地图信息*/
-    if (map->getOdomDepthTimeout())
-    {
-      ROS_ERROR("Depth Lost! EMERGENCY_STOP");
-      enable_fail_safe_ = false;
-      changeFSMExecState(EMERGENCY_STOP, "SAFETY");
-    }
-
-    /* ---------- check trajectory ---------- */
-    constexpr double time_step = 0.01;
-    double t_cur = ros::Time::now().toSec() - info->start_time;
-    Eigen::Vector3d p_cur = info->traj.getPos(t_cur);
-    const double CLEARANCE = 0.8 * planner_manager_->getSwarmClearance();
-    double t_cur_global = ros::Time::now().toSec();
-    double t_2_3 = planner_manager_->ploy_traj_opt_->getCollisionCheckTimeEnd();
-    double t_temp;
-    bool occ = false;
-    for (double t = t_cur; t < info->duration; t += time_step)
-    {
-      // If t_cur < t_2_3, only the first 2/3 partition of the trajectory is considered valid and will get checked.
-      if (t_cur < t_2_3 && t >= t_2_3)
-        break;
-
-      if (map->getInflateOccupancy(info->traj.getPos(t)) == 1) //检查是否和地图障碍物碰撞
-      {
-        ROS_WARN("drone %d is too close to the obstacle at relative time %f!",
-                 planner_manager_->pp_.drone_id, t / info->duration);
-        t_temp = t;
-        occ = true;
-        break;
-      }
-
-      // cable collision
-      if(cable_collision_open_)
-      {
-        if ( planner_manager_->pp_.drone_id != 0)
-        {
-          double t_X = t_cur_global - planner_manager_->traj_.swarm_traj.at(0).start_time;
-
-          if (t_X <= planner_manager_->traj_.swarm_traj.at(0).duration) //判断检查时id无人机是否已经走完
-          {
-            Eigen::Vector3d swarm0_pridicted = planner_manager_->traj_.swarm_traj.at(0).traj.getPos(t_X);
-            double cable_dis;
-            double cable_step = 2.1213203435596424 / 10;
-            Eigen::Vector3d cable_vector = swarm0_pridicted - p_cur;
-            double cable_current_length = cable_vector.norm();
-            Eigen::Vector3d cable_norm_vector = cable_vector / cable_current_length;
-            Eigen::Vector3d point_inline;
-            for (size_t i = 1; i < 10; i++)
-            {
-              cable_dis = i * cable_step;
-              point_inline = p_cur + cable_dis * cable_norm_vector;
-              if (map->getInflateOccupancy(point_inline) == 1) //检查是否和地图障碍物碰撞
-              {
-                ROS_WARN("cable %d is too close to the obstacle at relative time %f!",
-                  planner_manager_->pp_.drone_id, t / info->duration);
-                t_temp = t;
-                occ = true;
-                break;
-              }
-            } 
-          }
-        }       
-      }
-
-
-      for (size_t id = 0; id < planner_manager_->traj_.swarm_traj.size(); id++) 
-      {
-        if ((planner_manager_->traj_.swarm_traj.at(id).drone_id != (int)id) ||
-            (planner_manager_->traj_.swarm_traj.at(id).drone_id == planner_manager_->pp_.drone_id)) //判断是否接收到其他无人机轨迹 及 是否是当前无人机
-        {
-          continue;
-        }
-
-        double t_X = t_cur_global - planner_manager_->traj_.swarm_traj.at(id).start_time;
-
-        if (t_X > planner_manager_->traj_.swarm_traj.at(id).duration) //判断检查时id无人机是否已经走完当前路径
-          continue;
-
-        Eigen::Vector3d swarm_pridicted = planner_manager_->traj_.swarm_traj.at(id).traj.getPos(t_X);
-        double dist = (p_cur - swarm_pridicted).norm();
-
-        if (dist < CLEARANCE)
-        {
-          ROS_WARN("swarm distance between drone %d and drone %d is %f, too close!",
-                   planner_manager_->pp_.drone_id, id, dist);
-          t_temp = t;
-          occ = true;
-          break;
-        }
-      }
-    }
-
-    if (occ)
-    {
-      /* Handle the collided case immediately */
-      ROS_INFO("Try to replan a safe trajectory");
-      if (planFromLocalTraj(true, false)) // Make a chance 和REPLAN_TRAJ相比，是否要重新a_star
-      // if (planFromLocalTraj(false, true))
-      {
-        ROS_INFO("Plan success when detect collision.");
-        changeFSMExecState(EXEC_TRAJ, "SAFETY");
-        return;
-      }
-      else
-      {
-        if (t_temp - t_cur < emergency_time_) // 1.0s of emergency time 碰撞时间距当前时间不足1s 紧急停止
-        {
-          ROS_WARN("Emergency stop! time=%f", t_temp - t_cur);
-          changeFSMExecState(EMERGENCY_STOP, "SAFETY");
-        }
-        else
-        {
-          ROS_WARN("current traj in collision, replan.");
-          changeFSMExecState(REPLAN_TRAJ, "SAFETY");
-        }
-        return;
-      }
-    }
-  }
-
-  void EGOReplanFSM::triggerCallback(const geometry_msgs::PoseStampedPtr &msg)
-  {
-    have_trigger_ = true;
-    cout << "Triggered!" << endl;
-    init_pt_ = odom_pos_;
-  }
-
-  void EGOReplanFSM::waypointCallback(const geometry_msgs::PoseStampedPtr &msg)
-  {
-    if (msg->pose.position.z < -0.1)
-      return;
-
-    cout << "Triggered!" << endl;
-    // trigger_ = true;
-    init_pt_ = odom_pos_;
-
-    bool success = false;
-    end_pt_ << msg->pose.position.x, msg->pose.position.y, 1.0;
-
-    std::vector<Eigen::Vector3d> one_pt_wps;
-    one_pt_wps.push_back(end_pt_);
-
-    success = planner_manager_->planGlobalTrajWaypoints(
-        odom_pos_, odom_vel_, Eigen::Vector3d::Zero(),
-        one_pt_wps, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
-
-    visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(0, 0.5, 0.5, 1), 0.3, 0);
-
-    if (success)
-    {
-      /*** display ***/
-      constexpr double step_size_t = 0.1;
-      int i_end = floor(planner_manager_->traj_.global_traj.duration / step_size_t);
-      vector<Eigen::Vector3d> gloabl_traj(i_end);
-      for (int i = 0; i < i_end; i++)
-      {
-        gloabl_traj[i] = planner_manager_->traj_.global_traj.traj.getPos(i * step_size_t);
-      }
-
-      end_vel_.setZero();
-      have_target_ = true;
-      have_new_target_ = true;
-
-      /*** FSM ***/
-      if (exec_state_ == WAIT_TARGET)
-        changeFSMExecState(GEN_NEW_TRAJ, "TRIG");
-      else if (exec_state_ == EXEC_TRAJ)
-        changeFSMExecState(REPLAN_TRAJ, "TRIG");
-
-      // visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(1, 0, 0, 1), 0.3, 0);
-      visualization_->displayGlobalPathList(gloabl_traj, 0.1, 0);
-    }
-    else
-    {
-      ROS_ERROR("Unable to generate global trajectory!");
-    }
   }
 
   void EGOReplanFSM::odometryCallback(const nav_msgs::OdometryConstPtr &msg)
@@ -484,152 +92,6 @@ namespace ego_planner
     odom_orient_.z() = msg->pose.pose.orientation.z;
 
     have_odom_ = true;
-  }
-
-  void EGOReplanFSM::RecvBroadcastPolyTrajCallback(const traj_utils::PolyTrajConstPtr &msg)
-  {
-    if (msg->drone_id < 0) //drone id > 0 
-    {
-      ROS_ERROR("drone_id < 0 is not allowed in a swarm system!");
-      return;
-    }
-    if (msg->order != 5) // s=3 order = 2s-1
-    {
-      ROS_ERROR("Only support trajectory order equals 5 now!");
-      return;
-    }
-    if (msg->duration.size() * (msg->order + 1) != msg->coef_x.size()) 
-    {
-      ROS_ERROR("WRONG trajectory parameters.");
-      return;
-    }
-    if (abs((ros::Time::now() - msg->start_time).toSec()) > 0.25) //时间戳间隔不能过大
-    {
-      ROS_WARN("Time stamp diff: Local - Remote Agent %d = %fs",
-               msg->drone_id, (ros::Time::now() - msg->start_time).toSec());
-      return;
-    }
-
-    const size_t recv_id = (size_t)msg->drone_id;
-    if ((int)recv_id == planner_manager_->pp_.drone_id)  //接收的是其他无人机数据
-      return;
-
-    /* Fill up the buffer 填满缓冲区*/
-    if (planner_manager_->traj_.swarm_traj.size() <= recv_id)
-    {
-      for (size_t i = planner_manager_->traj_.swarm_traj.size(); i <= recv_id; i++)
-      {
-        LocalTrajData blank;
-        blank.drone_id = -1;
-        planner_manager_->traj_.swarm_traj.push_back(blank);
-      }
-    }
-
-    /* Store data 保存接收到的无人机轨迹数据*/
-    planner_manager_->traj_.swarm_traj[recv_id].drone_id = recv_id;
-    planner_manager_->traj_.swarm_traj[recv_id].traj_id = msg->traj_id;
-    planner_manager_->traj_.swarm_traj[recv_id].start_time = msg->start_time.toSec();
-
-    int piece_nums = msg->duration.size();
-    std::vector<double> dura(piece_nums);
-    std::vector<poly_traj::CoefficientMat> cMats(piece_nums);
-    for (int i = 0; i < piece_nums; ++i)
-    {
-      int i6 = i * 6;
-      cMats[i].row(0) << msg->coef_x[i6 + 0], msg->coef_x[i6 + 1], msg->coef_x[i6 + 2],
-          msg->coef_x[i6 + 3], msg->coef_x[i6 + 4], msg->coef_x[i6 + 5];
-      cMats[i].row(1) << msg->coef_y[i6 + 0], msg->coef_y[i6 + 1], msg->coef_y[i6 + 2],
-          msg->coef_y[i6 + 3], msg->coef_y[i6 + 4], msg->coef_y[i6 + 5];
-      cMats[i].row(2) << msg->coef_z[i6 + 0], msg->coef_z[i6 + 1], msg->coef_z[i6 + 2],
-          msg->coef_z[i6 + 3], msg->coef_z[i6 + 4], msg->coef_z[i6 + 5];
-
-      dura[i] = msg->duration[i];
-    }
-
-    poly_traj::Trajectory trajectory(dura, cMats);
-    planner_manager_->traj_.swarm_traj[recv_id].traj = trajectory;
-
-    planner_manager_->traj_.swarm_traj[recv_id].duration = trajectory.getTotalDuration();
-    planner_manager_->traj_.swarm_traj[recv_id].start_pos = trajectory.getPos(0.0);
-
-    /* Check Collision 检查是否碰撞*/
-    if (planner_manager_->checkCollision(recv_id))
-    {
-      changeFSMExecState(REPLAN_TRAJ, "SWARM_CHECK"); //若碰撞 本机replan trajectory
-    }
-
-    /* Check if receive agents have lower drone id  这个判断依旧没有看懂*/
-    if (!have_recv_pre_agent_)
-    {
-      if ((int)planner_manager_->traj_.swarm_traj.size() >= planner_manager_->pp_.drone_id)
-      {
-        for (int i = 0; i < planner_manager_->pp_.drone_id; ++i)
-        {
-          if (planner_manager_->traj_.swarm_traj[i].drone_id != i)
-          {
-            break;
-          }
-
-          have_recv_pre_agent_ = true;
-        }
-      }
-    }
-  }
-
-  void EGOReplanFSM::changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call)
-  {
-
-    if (new_state == exec_state_)
-      continously_called_times_++;
-    else
-      continously_called_times_ = 1;
-
-    static string state_str[8] = {"INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ", "EXEC_TRAJ", "EMERGENCY_STOP", "SEQUENTIAL_START"};
-    int pre_s = int(exec_state_);
-    exec_state_ = new_state;
-    cout << "[" + pos_call + "]: from " + state_str[pre_s] + " to " + state_str[int(new_state)] << endl;
-  }
-
-  void EGOReplanFSM::printFSMExecState()
-  {
-    static string state_str[8] = {"INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ", "EXEC_TRAJ", "EMERGENCY_STOP", "SEQUENTIAL_START"};
-    static int last_printed_state = -1, dot_nums = 0;
-
-    if (exec_state_ != last_printed_state)
-      dot_nums = 0;
-    else
-      dot_nums++;
-
-    cout << "\r[FSM]: state: " + state_str[int(exec_state_)];
-
-    last_printed_state = exec_state_;
-
-    // some warnings
-    if (!have_odom_)
-    {
-      cout << ", waiting for odom";
-    }
-    if (!have_target_)
-    {
-      cout << ", waiting for target";
-    }
-    if (!have_trigger_)
-    {
-      cout << ", waiting for trigger";
-    }
-    if (planner_manager_->pp_.drone_id >= 1 && !have_recv_pre_agent_)
-    {
-      cout << ", haven't receive traj from previous drone";
-    }
-
-    cout << string(dot_nums, '.') << endl;
-
-    fflush(stdout);
-  }
-
-  std::pair<int, EGOReplanFSM::FSM_EXEC_STATE> EGOReplanFSM::timesOfConsecutiveStateCalls()
-  {
-    return std::pair<int, FSM_EXEC_STATE>(continously_called_times_, exec_state_);
   }
 
   void EGOReplanFSM::polyTraj2ROSMsg(traj_utils::PolyTraj &msg)
@@ -669,30 +131,23 @@ namespace ego_planner
       return;
 
     cout << "Triggered!" << endl;
-    init_pt_ = odom_pos_;
 
     bool success = false;
     swarm_central_pos_(0) = msg->pose.position.x;
     swarm_central_pos_(1) = msg->pose.position.y;
     swarm_central_pos_(2) = 0.5;
-
-    int id = planner_manager_->pp_.drone_id;
-
-    Eigen::Vector3d relative_pos;
-    relative_pos << swarm_relative_pts_[id][0],
-                    swarm_relative_pts_[id][1],
-                    swarm_relative_pts_[id][2];
-    end_pt_ = swarm_central_pos_ + swarm_scale_ * relative_pos;
-
+  
+    end_pt_ = swarm_central_pos_;
     std::vector<Eigen::Vector3d> one_pt_wps;
     one_pt_wps.push_back(end_pt_);
 
-
     success = planner_manager_->planGlobalTrajWaypoints(
         odom_pos_, odom_vel_, Eigen::Vector3d::Zero(),  //初始位置、速度、加速度
-        one_pt_wps, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
+        one_pt_wps, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()); //当前位置作为起始点，目标点作为终止点，不考虑避障等 生成全局轨迹
 
     visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(0, 0.5, 0.5, 1), 0.3, 0);
+
+    ROS_INFO("have target success %ld", success);
 
     if (success)
     {
@@ -706,69 +161,11 @@ namespace ego_planner
       }
 
       end_vel_.setZero();
-      have_target_ = true;
-      have_new_target_ = true;
-
-      /*** FSM ***/
-      if (exec_state_ == WAIT_TARGET)
-        changeFSMExecState(SEQUENTIAL_START, "TRIG");
-      else if (exec_state_ == EXEC_TRAJ)
-        changeFSMExecState(REPLAN_TRAJ, "TRIG");
-
-      // visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(1, 0, 0, 1), 0.3, 0);
-      visualization_->displayGlobalPathList(gloabl_traj, 0.1, 0);
-    }
-    else
-    {
-      ROS_ERROR("Unable to generate global trajectory!");
-    }
-  }
-  void EGOReplanFSM::planGlobalTrajbyGivenWps()
-  {
-    std::vector<Eigen::Vector3d> wps;
-    if (target_type_ == TARGET_TYPE::PRESET_TARGET)
-    {
-      wps.resize(waypoint_num_);
-      for (int i = 0; i < waypoint_num_; i++)
-      {
-        wps[i](0) = waypoints_[i][0];
-        wps[i](1) = waypoints_[i][1];
-        wps[i](2) = waypoints_[i][2];
-      }
-      end_pt_ = wps.back();
-      for (size_t i = 0; i < (size_t)waypoint_num_; i++)
-      {
-        visualization_->displayGoalPoint(wps[i], Eigen::Vector4d(0, 0.5, 0.5, 1), 0.3, i);
-        ros::Duration(0.001).sleep();
-      }
-    }
-    else
-      return;
-
-    bool success = planner_manager_->planGlobalTrajWaypoints(odom_pos_, Eigen::Vector3d::Zero(),
-                                                             Eigen::Vector3d::Zero(), wps,
-                                                             Eigen::Vector3d::Zero(),
-                                                             Eigen::Vector3d::Zero());
-
-    if (success)
-    {
-      /*** display ***/
-      constexpr double step_size_t = 0.1;
-      int i_end = floor(planner_manager_->traj_.global_traj.duration / step_size_t);
-      std::vector<Eigen::Vector3d> gloabl_traj(i_end);
-      for (int i = 0; i < i_end; i++)
-      {
-        gloabl_traj[i] = planner_manager_->traj_.global_traj.traj.getPos(i * step_size_t);
-      }
-
-      end_vel_.setZero();
-      have_target_ = true;
+      have_target_ = true;   //若生成成功
       have_new_target_ = true;
 
       // visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(1, 0, 0, 1), 0.3, 0);
-      ros::Duration(0.001).sleep();
       visualization_->displayGlobalPathList(gloabl_traj, 0.1, 0);
-      ros::Duration(0.001).sleep();
     }
     else
     {
@@ -785,7 +182,7 @@ namespace ego_planner
 
     for (int i = 0; i < trial_times; i++)
     {
-      if (callReboundReplan(true, false, true))
+      if (callReboundReplan(true))
       {
         return true;
       }
@@ -793,9 +190,8 @@ namespace ego_planner
     return false;
   }
 
-  bool EGOReplanFSM::planFromLocalTraj(bool flag_use_poly_init, bool use_formation)
+  bool EGOReplanFSM::planFromLocalTraj(bool flag_use_poly_init)
   {
-    double t_debug_start = ros::Time::now().toSec();
     LocalTrajData *info = &planner_manager_->traj_.local_traj;
     double t_cur = ros::Time::now().toSec() - info->start_time;
 
@@ -803,28 +199,26 @@ namespace ego_planner
     start_vel_ = info->traj.getVel(t_cur);
     start_acc_ = info->traj.getAcc(t_cur);
 
-    bool success = callReboundReplan(flag_use_poly_init, false, use_formation);
+    bool success = callReboundReplan(flag_use_poly_init);
 
     if (!success)
       return false;
 
-    // cout << "planFromLocalTraj : " << ros::Time::now().toSec() - t_debug_start << endl;
-
     return true;
   }
 
-  bool EGOReplanFSM::callReboundReplan(bool flag_use_poly_init, bool flag_randomPolyTraj, bool use_formation)
+  bool EGOReplanFSM::callReboundReplan(bool flag_use_poly_init)
   {
     //优化主程序
     planner_manager_->getLocalTarget(
         planning_horizen_, start_pt_, end_pt_,
-        local_target_pt_, local_target_vel_);
+        local_target_pt_, local_target_vel_);  //start_pt_是当前无人机位置，end_pt_是地图上的鼠标给出的目标位置 planning_horizen_是待规划的距离=7.5m // 从当前位置向前规划7.5m 取其位置和速度作为目标
 
     Eigen::Vector3d desired_start_pt, desired_start_vel, desired_start_acc;
     double desired_start_time;
-    if (have_local_traj_ && use_formation)
+    if (have_local_traj_)
     {
-      desired_start_time = ros::Time::now().toSec() + replan_trajectory_time_;
+      desired_start_time = ros::Time::now().toSec() + replan_trajectory_time_;  //考虑重新规划轨迹所需的时间
       desired_start_pt =
           planner_manager_->traj_.local_traj.traj.getPos(desired_start_time - planner_manager_->traj_.local_traj.start_time);
       desired_start_vel =
@@ -838,11 +232,11 @@ namespace ego_planner
       desired_start_vel = start_vel_;
       desired_start_acc = start_acc_;
     }
-    bool plan_success = planner_manager_->reboundReplan(
+    bool plan_success = planner_manager_->reboundReplanForLoad(
         desired_start_pt, desired_start_vel, desired_start_acc,
         desired_start_time, local_target_pt_, local_target_vel_,
         (have_new_target_ || flag_use_poly_init),
-        flag_randomPolyTraj, use_formation, have_local_traj_);
+        have_local_traj_);
 
     have_new_target_ = false;
 
@@ -850,23 +244,10 @@ namespace ego_planner
     {
       traj_utils::PolyTraj msg;
       polyTraj2ROSMsg(msg);
-      poly_traj_pub_.publish(msg);
-      broadcast_ploytraj_pub_.publish(msg);  //若轨迹规划成功 则发布消息
+      poly_traj_pub_.publish(msg); //若轨迹规划成功则发布消息
       have_local_traj_ = true;
     }
 
     return plan_success;
   }
-
-  bool EGOReplanFSM::callEmergencyStop(Eigen::Vector3d stop_pos)
-  {
-    planner_manager_->EmergencyStop(stop_pos);
-
-    traj_utils::PolyTraj msg;
-    polyTraj2ROSMsg(msg);
-    poly_traj_pub_.publish(msg);
-
-    return true;
-  }
-
 } // namespace ego_planner

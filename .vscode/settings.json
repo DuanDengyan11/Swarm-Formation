@@ -19,6 +19,8 @@
         "complex": "cpp",
         "cmath": "cpp",
         "iosfwd": "cpp",
-        "fstream": "cpp"
-    }
+        "fstream": "cpp",
+        "memory_resource": "cpp"
+    },
+    "cmake.sourceDirectory": "${workspaceFolder}/src/Utils/odom_visualization"
 }

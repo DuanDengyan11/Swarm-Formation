@@ -30,25 +30,10 @@ namespace ego_planner
     t_init = ros::Time::now();
     
     nh.param("manager/drone_id", drone_id_, -1);
-    nh.param("optimization/formation_type", formation_type_, -1);
     initSwarmGraphVisual();
     swarm_odom.resize(formation_size_);
     for (int i=0; i<formation_size_; i++)
-      swarm_odom[i] = Eigen::Vector3d::Zero();
-    
-    drone_0_odom_sub_ = nh.subscribe("/drone_0_visual_slam/odom", 1, &PlanningVisualization::drone_0_odomeCallback, this);
-    drone_1_odom_sub_ = nh.subscribe("/drone_1_visual_slam/odom", 1, &PlanningVisualization::drone_1_odomeCallback, this);
-    drone_2_odom_sub_ = nh.subscribe("/drone_2_visual_slam/odom", 1, &PlanningVisualization::drone_2_odomeCallback, this);
-    drone_3_odom_sub_ = nh.subscribe("/drone_3_visual_slam/odom", 1, &PlanningVisualization::drone_3_odomeCallback, this);
-    drone_4_odom_sub_ = nh.subscribe("/drone_4_visual_slam/odom", 1, &PlanningVisualization::drone_4_odomeCallback, this);
-    drone_5_odom_sub_ = nh.subscribe("/drone_5_visual_slam/odom", 1, &PlanningVisualization::drone_5_odomeCallback, this);
-    drone_6_odom_sub_ = nh.subscribe("/drone_6_visual_slam/odom", 1, &PlanningVisualization::drone_6_odomeCallback, this);
-    drone_7_odom_sub_ = nh.subscribe("/drone_7_visual_slam/odom", 1, &PlanningVisualization::drone_7_odomeCallback, this);
-    drone_8_odom_sub_ = nh.subscribe("/drone_8_visual_slam/odom", 1, &PlanningVisualization::drone_8_odomeCallback, this);
-    drone_9_odom_sub_ = nh.subscribe("/drone_9_visual_slam/odom", 1, &PlanningVisualization::drone_9_odomeCallback, this);
-    drone_10_odom_sub_ = nh.subscribe("/drone_10_visual_slam/odom", 1, &PlanningVisualization::drone_10_odomeCallback, this);
-    drone_11_odom_sub_ = nh.subscribe("/drone_11_visual_slam/odom", 1, &PlanningVisualization::drone_11_odomeCallback, this);
-    
+      swarm_odom[i] = Eigen::Vector3d::Zero();  
     
     if (drone_id_ == 0){
       swarm_graph_visual_timer_ = nh.createTimer(ros::Duration(0.01), &PlanningVisualization::swarmGraphVisulCallback, this);
@@ -96,136 +81,13 @@ namespace ego_planner
     swarm_formation_visual_pub.publish(lines);
   }
 
-  void PlanningVisualization::benchmarkCallback(const ros::TimerEvent &e){
-       
-       t_record = ros::Time::now();
-       double t_current = (t_record - t_init).toSec();
-       odom_csv << t_current << ",";
-       for( auto odom: swarm_odom){
-         odom_csv << odom(0) << "," << odom(1) << ", ";
-       }
-       odom_csv << std::endl;
-  }
-
-  void PlanningVisualization::drone_0_odomeCallback(const nav_msgs::OdometryConstPtr &msg){
-    if (formation_size_ <=0 )
-      return;
-    
-    swarm_odom[0] << msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z;
-  }
-
-  void PlanningVisualization::drone_1_odomeCallback(const nav_msgs::OdometryConstPtr &msg){
-    if (formation_size_ <=1 )
-      return;
-    
-    swarm_odom[1] << msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z;
-  }
-
-  void PlanningVisualization::drone_2_odomeCallback(const nav_msgs::OdometryConstPtr &msg){
-    if (formation_size_ <=2 )
-      return;
-    
-    swarm_odom[2] << msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z;
-  }
-
-  void PlanningVisualization::drone_3_odomeCallback(const nav_msgs::OdometryConstPtr &msg){
-    if (formation_size_ <=3 )
-      return;
-    
-    swarm_odom[3] << msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z;
-  }
-
-  void PlanningVisualization::drone_4_odomeCallback(const nav_msgs::OdometryConstPtr &msg){
-    if (formation_size_ <=4 )
-      return;
-    
-    swarm_odom[4] << msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z;
-  }
-
-  void PlanningVisualization::drone_5_odomeCallback(const nav_msgs::OdometryConstPtr &msg){
-    if (formation_size_ <=5 )
-      return;
-    
-    swarm_odom[5] << msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z;
-  }
-
-  void PlanningVisualization::drone_6_odomeCallback(const nav_msgs::OdometryConstPtr &msg){
-    if (formation_size_ <=5 )
-      return;
-    
-    swarm_odom[6] << msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z;
-  }
-
-  void PlanningVisualization::drone_7_odomeCallback(const nav_msgs::OdometryConstPtr &msg){
-    if (formation_size_ <=7 )
-      return;
-    
-    swarm_odom[7] << msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z;
-  }
-
-  void PlanningVisualization::drone_8_odomeCallback(const nav_msgs::OdometryConstPtr &msg){
-    if (formation_size_ <=8 )
-      return;
-    
-    swarm_odom[8] << msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z;
-  }
-
-  void PlanningVisualization::drone_9_odomeCallback(const nav_msgs::OdometryConstPtr &msg){
-    if (formation_size_ <=9 )
-      return;
-    
-    swarm_odom[9] << msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z;
-  }
-
-  void PlanningVisualization::drone_10_odomeCallback(const nav_msgs::OdometryConstPtr &msg){
-    if (formation_size_ <=10 )
-      return;
-    
-    swarm_odom[10] << msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z;
-  }
-
-  void PlanningVisualization::drone_11_odomeCallback(const nav_msgs::OdometryConstPtr &msg){
-    if (formation_size_ <=11 )
-      return;
-    
-    swarm_odom[11] << msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z;
-  }
-
   void PlanningVisualization::initSwarmGraphVisual(){
-    switch (formation_type_)
-    {
-    case FORMATION_TYPE::NONE_FORMATION:
-    {
-      formation_size_ = 0;
-      line_size_      = 0;
-      break;
-    }
-
-    case FORMATION_TYPE::REGULAR_HEXAGON:
-    {
-      formation_size_ = 7;
-      line_size_      = 12;
-      line_begin_.resize(line_size_);
-      line_end_.resize(line_size_);
-      line_begin_ = {0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6};
-      line_end_   = {1, 2, 3, 4, 5, 6, 2, 3, 4, 5, 6, 1};
-      
-      break;
-    }
-
-    case FORMATION_TYPE::TWIN_LIFT:
-    {
       formation_size_ = 3;
       line_size_      = 2;
       line_begin_.resize(line_size_);
       line_end_.resize(line_size_);
       line_begin_ = {0, 0};
       line_end_   = {1, 2};
-    }
-    
-    default:
-      break;
-    }
   }
 
   // // real ids used: {id, id+1000}

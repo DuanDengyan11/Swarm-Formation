@@ -43,7 +43,6 @@ namespace ego_planner
                                                     const Eigen::Vector3d &start_acc,
                                                     const Eigen::Vector3d &local_target_pt,
                                                     const Eigen::Vector3d &local_target_vel,
-                                                    const double &ts,
                                                     poly_traj::MinJerkOpt &initMJO,
                                                     const bool flag_polyInit)
   {
@@ -58,7 +57,6 @@ namespace ego_planner
       Eigen::MatrixXd innerPs;
       Eigen::VectorXd piece_dur_vec;
       int piece_nums;
-      poly_traj::Trajectory traj;
       vector<Eigen::Vector3d> simple_path;
       constexpr double init_of_init_totaldur = 2.0;
 
@@ -71,7 +69,6 @@ namespace ego_planner
       // traj = ploy_traj_opt_->astarWithMinTraj(headState, tailState, simple_path, ctl_points);
       //采用Astar算法产生初始轨迹
       ploy_traj_opt_->astarWithMinTraj(headState, tailState, simple_path, ctl_points, initMJO);
-      traj = initMJO.getTraj();
 
       // show the init simple_path
       vector<vector<Eigen::Vector3d>> path_view;
@@ -145,7 +142,7 @@ namespace ego_planner
 
     traj_.global_traj.last_glb_t_of_lc_tgt = traj_.global_traj.glb_t_of_lc_tgt;
 
-    double t_step = planning_horizen / 20 / pp_.max_vel_;
+    double t_step = planning_horizen / 20 / pp_.max_vel_;  //planning_horizen = 7.5m
     // double dist_min = 9999, dist_min_t = 0.0;
     for (t = traj_.global_traj.glb_t_of_lc_tgt;
          t < (traj_.global_traj.global_start_time + traj_.global_traj.duration);
@@ -178,15 +175,11 @@ namespace ego_planner
     }
   }
 
-        // desired_start_pt, desired_start_vel, desired_start_acc,
-        // desired_start_time, local_target_pt_, local_target_vel_,
-        // (have_new_target_ || flag_use_poly_init),
-        // flag_randomPolyTraj, use_formation, have_local_traj_);
-  bool EGOPlannerManager::reboundReplan(
+  //for load
+  bool EGOPlannerManager::reboundReplanForLoad(
       const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_vel, const Eigen::Vector3d &start_acc,
       const double trajectory_start_time, const Eigen::Vector3d &local_target_pt, const Eigen::Vector3d &local_target_vel,
-      const bool flag_polyInit, const bool flag_randomPolyTraj,
-      const bool use_formation, const bool have_local_traj)
+      const bool flag_polyInit,  const bool have_local_traj)
   {
     static int count = 0;
 
@@ -202,13 +195,11 @@ namespace ego_planner
     ros::Duration t_init, t_opt;
 
     /*** STEP 1: INIT ***/
-    double ts = pp_.polyTraj_piece_length / pp_.max_vel_; //init总时长，假设速度最大
-
    
     poly_traj::MinJerkOpt initMJO;
     if (!computeInitReferenceState(start_pt, start_vel, start_acc,
                                    local_target_pt, local_target_vel,
-                                   ts, initMJO, flag_polyInit))
+                                  initMJO, flag_polyInit))
     {
       return false;
     }
@@ -239,7 +230,7 @@ namespace ego_planner
     tailState << initTraj.getJuncPos(PN), initTraj.getJuncVel(PN), initTraj.getJuncAcc(PN);
     flag_success = ploy_traj_opt_->OptimizeTrajectory_lbfgs(headState, tailState,
                                                             innerPts, initTraj.getDurations(),
-                                                            cstr_pts, use_formation);
+                                                            cstr_pts);
  
     t_opt = ros::Time::now() - t_start;
 
@@ -261,7 +252,7 @@ namespace ego_planner
          << ",count_success= " << count_success << endl;
     average_plan_time_ = sum_time / count_success;
 
-    if (have_local_traj && use_formation)
+    if (have_local_traj)
     {
       double delta_replan_time = trajectory_start_time - ros::Time::now().toSec();
       if (delta_replan_time > 0)
@@ -293,32 +284,6 @@ namespace ego_planner
     traj_.setLocalTraj(stopMJO.getTraj(), ros::Time::now().toSec());
 
     return true;
-  }
-
-  bool EGOPlannerManager::checkCollision(int drone_id)
-  {
-    if (traj_.local_traj.start_time < 1e9) // It means my first planning has not started
-      return false;
-
-    double my_traj_start_time = traj_.local_traj.start_time; //当前无人机轨迹开始时间
-    double other_traj_start_time = traj_.swarm_traj[drone_id].start_time; //drone_id无人机轨迹开始时间
-
-    //轨迹重叠时间
-    double t_start = max(my_traj_start_time, other_traj_start_time); 
-    double t_end = min(my_traj_start_time + traj_.local_traj.duration * 2 / 3, //为啥要乘上2/3
-                       other_traj_start_time + traj_.swarm_traj[drone_id].duration);
-
-    for (double t = t_start; t < t_end; t += 0.03)
-    {
-      if ((traj_.local_traj.traj.getPos(t - my_traj_start_time) -
-           traj_.swarm_traj[drone_id].traj.getPos(t - other_traj_start_time))
-              .norm() < ploy_traj_opt_->getSwarmClearance())
-      {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   bool EGOPlannerManager::planGlobalTrajWaypoints(

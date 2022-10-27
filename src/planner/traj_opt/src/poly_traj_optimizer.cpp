@@ -7,7 +7,7 @@ namespace ego_planner
   bool PolyTrajOptimizer::OptimizeTrajectory_lbfgs(
       const Eigen::MatrixXd &iniState, const Eigen::MatrixXd &finState,
       const Eigen::MatrixXd &initInnerPts, const Eigen::VectorXd &initT,
-      Eigen::MatrixXd &optimal_points, const bool use_formation)
+      Eigen::MatrixXd &optimal_points)
   {
     if (initInnerPts.cols() != (initT.size() - 1))
     {
@@ -27,7 +27,6 @@ namespace ego_planner
     ros::Time t0 = ros::Time::now(), t1, t2;
     int restart_nums = 0, rebound_times = 0;
     bool flag_force_return, flag_still_occ;
-    bool use_formation_temp = use_formation_;
 
     double q[variable_num_];
     memcpy(q, initInnerPts.data(), initInnerPts.size() * sizeof(q[0]));
@@ -39,21 +38,7 @@ namespace ego_planner
     lbfgs_params.mem_size = 16;
     lbfgs_params.g_epsilon = 0.1;
     lbfgs_params.min_step = 1e-32;
-
-    /* trick : for real-time optimization */
-    if (use_formation)
-    {
-      // consider formation
-      // so we use less iterations for real time optimization
-      lbfgs_params.max_iterations = 20; // 200
-    }
-    else
-    {
-      // do not consider formation
-      // so we use more iterations for more precise optimization results
-      lbfgs_params.max_iterations = 60; // 200
-      use_formation_ = false;
-    }
+    lbfgs_params.max_iterations = 60; // 200
 
     iter_num_ = 0;
     flag_force_return = false;
@@ -77,17 +62,13 @@ namespace ego_planner
     bool occ = false;
     occ = checkCollision();
 
-    use_formation_ = use_formation_temp;
-
     t2 = ros::Time::now();
     double time_ms = (t2 - t1).toSec() * 1000;
     double total_time_ms = (t2 - t0).toSec() * 1000;
 
-    printf("\033[32miter=%d, use_formation=%d, time(ms)=%5.3f, \n\033[0m", iter_num_, use_formation, time_ms);
+    printf("\033[32miter=%d, time(ms)=%5.3f, \n\033[0m", iter_num_, time_ms);
     // ROS_WARN("The optimization result is : %s", lbfgs::lbfgs_strerror(result));
     optimal_points = cps_.points;
-
-    showFormationInformation(false, start_pos);
 
     if (occ)
       return false;
@@ -322,22 +303,6 @@ namespace ego_planner
           }
           costs(1) += omg * step * costp;
         }
-        // formation
-        // if (use_formation_)
-        // {
-        //   if (swarmGraphGradCostP(i_dp, t + step * j, pos, vel, gradp, gradt, grad_prev_t, costp))
-        //   {
-        //     gradViolaPc = beta0 * gradp.transpose();
-        //     gradViolaPt = alpha * gradt;
-        //     jerkOpt_.get_gdC().block<6, 3>(i * 6, 0) += omg * step * gradViolaPc;
-        //     gdT(i) += omg * (costp / K + step * gradViolaPt);
-        //     if (i > 0)
-        //     {
-        //       gdT.head(i).array() += omg * step * grad_prev_t;
-        //     }
-        //     costs(2) += omg * step * costp;
-        //   }
-        // }
         // feasibility
         if (feasibilityGradCostV(vel, gradv, costv))
         {
@@ -404,93 +369,6 @@ namespace ego_planner
     costs(5) += var;
 
   }
-
-  bool PolyTrajOptimizer::swarmGraphGradCostP(const int i_dp,
-                                              const double t,
-                                              const Eigen::Vector3d &p,
-                                              const Eigen::Vector3d &v,
-                                              Eigen::Vector3d &gradp,
-                                              double &gradt,
-                                              double &grad_prev_t,
-                                              double &costp)
-  {
-    if (i_dp <= 0 || i_dp >= cps_.cp_size * 2 / 3)
-      return false;
-
-    int size = swarm_trajs_->size();
-    if (drone_id_ == formation_size_ - 1)
-      size = formation_size_;
-
-    // wait all the drones have trajectories
-    if (size < formation_size_)
-      return false;
-
-    if (i_dp <= 0 || i_dp >= cps_.cp_size * 2 / 3)
-      return false;
-
-    // init
-    bool ret = false;
-    gradp.setZero();
-    gradt = 0;
-    grad_prev_t = 0;
-    costp = 0;
-    // update the swarm graph
-    double pt_time = t_now_ + t;
-    vector<Eigen::Vector3d> swarm_graph_pos(formation_size_), swarm_graph_vel(formation_size_);
-    swarm_graph_pos[drone_id_] = p;
-    swarm_graph_vel[drone_id_] = v;
-
-    for (size_t id = 0; id < size; id++)
-    {
-      if (id == drone_id_)
-        continue;
-
-      double traj_i_satrt_time = swarm_trajs_->at(id).start_time;
-
-      Eigen::Vector3d swarm_p, swarm_v;
-      if (pt_time < traj_i_satrt_time + swarm_trajs_->at(id).duration)
-      {
-        swarm_p = swarm_trajs_->at(id).traj.getPos(pt_time - traj_i_satrt_time);
-        swarm_v = swarm_trajs_->at(id).traj.getVel(pt_time - traj_i_satrt_time);
-      }
-      else
-      {
-        double exceed_time = pt_time - (traj_i_satrt_time + swarm_trajs_->at(id).duration);
-        swarm_v = swarm_trajs_->at(id).traj.getVel(swarm_trajs_->at(id).duration);
-        swarm_p = swarm_trajs_->at(id).traj.getPos(swarm_trajs_->at(id).duration) +
-                  exceed_time * swarm_v;
-      }
-      swarm_graph_pos[id] = swarm_p;
-      swarm_graph_vel[id] = swarm_v;
-    }
-
-    swarm_graph_->updateGraph(swarm_graph_pos);
-
-    // calculate the swarm graph cost and gradp
-    double similarity_error;
-    swarm_graph_->calcFNorm2(similarity_error);
-
-    if (similarity_error > 0)
-    {
-      ret = true;
-
-      costp = wei_formation_ * similarity_error;
-      vector<Eigen::Vector3d> swarm_grad;
-      swarm_graph_->getGrad(swarm_grad);
-
-      gradp = wei_formation_ * swarm_grad[drone_id_];
-
-      for (size_t id = 0; id < size; id++)
-      {
-        gradt += wei_formation_ * swarm_grad[id].dot(swarm_graph_vel[id]);
-        if (id != drone_id_)
-          grad_prev_t += wei_formation_ * swarm_grad[id].dot(swarm_graph_vel[id]);
-      }
-    }
-
-    return ret;
-  }
-
 
    bool PolyTrajOptimizer::CableLengthGradCostP(const int i_dp,
                                          const double t,
@@ -842,7 +720,7 @@ namespace ego_planner
     Eigen::Vector3d end_pos = finState.col(0); //结束位置
 
     /* astar search and get the simple path*/
-    simple_path = a_star_->astarSearchAndGetSimplePath(grid_map_->getResolution(), start_pos, end_pos);
+    simple_path = a_star_->astarSearchAndGetSimplePath(grid_map_->getResolution(), start_pos, end_pos, load_dist_);
 
     /* generate minimum snap trajectory based on the simple_path waypoints*/
     int piece_num = simple_path.size() - 1;
@@ -880,71 +758,9 @@ namespace ego_planner
       des_vel /= 1.5;
     } while (frontendMJ.getTraj().getMaxVelRate() > max_vel_ && debug_num < 1);
 
-    poly_traj::Trajectory traj;
-    traj = frontendMJ.getTraj();
-
     ctl_points = frontendMJ.getInitConstrainPoints(cps_num_prePiece_);
   }
-
-  bool PolyTrajOptimizer::getFormationPos(vector<Eigen::Vector3d> &swarm_graph_pos, Eigen::Vector3d pos)
-  {
-    if (swarm_trajs_->size() < formation_size_ || !use_formation_)
-    {
-      return false;
-    }
-    else
-    {
-      double pt_time = t_now_;
-
-      swarm_graph_pos[drone_id_] = pos;
-
-      for (size_t id = 0; id < swarm_trajs_->size(); id++)
-      {
-        if (swarm_trajs_->at(id).drone_id < 0 || swarm_trajs_->at(id).drone_id == drone_id_)
-          continue;
-
-        double traj_i_satrt_time = swarm_trajs_->at(id).start_time;
-
-        Eigen::Vector3d swarm_p, swarm_v;
-        if (pt_time < traj_i_satrt_time + swarm_trajs_->at(id).duration)
-        {
-          swarm_p = swarm_trajs_->at(id).traj.getPos(pt_time - traj_i_satrt_time);
-          swarm_v = swarm_trajs_->at(id).traj.getVel(pt_time - traj_i_satrt_time);
-        }
-        else
-        {
-          double exceed_time = pt_time - (traj_i_satrt_time + swarm_trajs_->at(id).duration);
-          swarm_v = swarm_trajs_->at(id).traj.getVel(swarm_trajs_->at(id).duration);
-          swarm_p = swarm_trajs_->at(id).traj.getPos(swarm_trajs_->at(id).duration) +
-                    exceed_time * swarm_v;
-        }
-        swarm_graph_pos[id] = swarm_p;
-      }
-      return true;
-    }
-  }
-
-  void PolyTrajOptimizer::showFormationInformation(bool is_show, Eigen::Vector3d pos)
-  {
-    if (!is_show)
-      return;
-
-    if (swarm_trajs_->size() < formation_size_ || drone_id_ != 0 || !use_formation_)
-    {
-      return;
-    }
-    else
-    {
-      vector<Eigen::Vector3d> swarm_graph_pos(formation_size_);
-      getFormationPos(swarm_graph_pos, pos);
-      swarm_graph_->updateGraph(swarm_graph_pos);
-      // calculate the swarm graph cost and gradp
-      double similarity_error;
-      swarm_graph_->calcFNorm2(similarity_error);
-      cout << "[formation]: --------------- " << similarity_error << " --------------" << endl;
-    }
-  }
-
+  
   /* helper functions */
   void PolyTrajOptimizer::setParam(ros::NodeHandle &nh)
   {
@@ -960,6 +776,7 @@ namespace ego_planner
     nh.param("optimization/weight_cable_length", weight_cable_length_, -1.0);
     nh.param("optimization/weight_cable_colli", weight_cable_colli_, -1.0);
     nh.param("optimization/cable_tolerance", cable_tolerance_, 0.01);
+    nh.param("optimization/load_dist", load_dist_, 0.5);
 
     nh.param("optimization/obstacle_clearance", obs_clearance_, -1.0);
     nh.param("optimization/swarm_clearance", swarm_clearance_, -1.0);
@@ -968,8 +785,6 @@ namespace ego_planner
     nh.param("optimization/max_acc", max_acc_, -1.0);
 
     // set the formation type
-    swarm_graph_.reset(new SwarmGraph);
-    setDesiredFormation(formation_type_);
   }
 
   void PolyTrajOptimizer::setEnvironment(const GridMap::Ptr &map)

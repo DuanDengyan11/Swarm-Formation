@@ -61,8 +61,7 @@ private:
 	//bool (*checkOccupancyPtr)( const Eigen::Vector3d &pos );
 	
 	inline bool checkOccupancy(const Eigen::Vector3d &pos) { return (bool)grid_map_->getInflateOccupancy(pos); }
-	inline bool checkOccupancy_esdf(const Eigen::Vector3d &pos){
-		const double dist = 0.2;
+	inline bool checkOccupancy_esdf(const Eigen::Vector3d &pos, const double dist){
 		if (grid_map_->getDistance(pos) < dist ) 
 			return true;
 		else
@@ -99,11 +98,11 @@ public:
 
 	void initGridMap(GridMap::Ptr occ_map, const Eigen::Vector3i pool_size);
 
-	bool AstarSearch(const double step_size, Eigen::Vector3d start_pt, Eigen::Vector3d end_pt, bool use_esdf_check);
+	bool AstarSearch(const double step_size, Eigen::Vector3d start_pt, Eigen::Vector3d end_pt, bool use_esdf_check, double dist);
 
 	std::vector<Eigen::Vector3d> getPath();
 
-	std::vector<Eigen::Vector3d> astarSearchAndGetSimplePath(const double step_size, Eigen::Vector3d start_pt, Eigen::Vector3d end_pt);
+	std::vector<Eigen::Vector3d> astarSearchAndGetSimplePath(const double step_size, Eigen::Vector3d start_pt, Eigen::Vector3d end_pt, double dist);
 };
 
 inline double AStar::getHeu(GridNodePtr node1, GridNodePtr node2)

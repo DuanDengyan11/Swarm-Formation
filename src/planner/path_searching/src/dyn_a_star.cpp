@@ -119,7 +119,7 @@ bool AStar::ConvertToIndexAndAdjustStartEndPoints(Vector3d start_pt, Vector3d en
     return true;
 }
 
-bool AStar::AstarSearch(const double step_size, Vector3d start_pt, Vector3d end_pt, bool use_esdf_check)
+bool AStar::AstarSearch(const double step_size, Vector3d start_pt, Vector3d end_pt, bool use_esdf_check, double dist)
 {
     ros::Time time_1 = ros::Time::now();
     ++rounds_;
@@ -212,7 +212,7 @@ bool AStar::AstarSearch(const double step_size, Vector3d start_pt, Vector3d end_
                     neighborPtr->rounds = rounds_;
 
                     if(use_esdf_check){
-                        if (checkOccupancy_esdf(Index2Coord(neighborPtr->index)))
+                        if (checkOccupancy_esdf(Index2Coord(neighborPtr->index), dist))
                             continue;
                     } else {
                         if (checkOccupancy(Index2Coord(neighborPtr->index)))
@@ -265,16 +265,17 @@ vector<Vector3d> AStar::getPath()
     return path;
 }
 
-vector<Vector3d> AStar::astarSearchAndGetSimplePath(const double step_size, Vector3d start_pt, Vector3d end_pt){
+vector<Vector3d> AStar::astarSearchAndGetSimplePath(const double step_size, Vector3d start_pt, Vector3d end_pt, double dist){
     // call astar search and get the path
-    AstarSearch(step_size, start_pt, end_pt, true);
+    AstarSearch(step_size, start_pt, end_pt, true, dist);
     vector<Vector3d> path = getPath();
     bool is_show_debug = false;
 
     // I don't know why, but only try A* again
     if ((path[0]-start_pt).norm() > 0.5){
         ROS_WARN("I don't know why, but only try A* again");
-        AstarSearch(step_size, start_pt, end_pt, false);
+        ROS_WARN("The variance between two start points is larger than 0.5 m, so again not use esdf");
+        AstarSearch(step_size, start_pt, end_pt, false, dist);
         path = getPath();
     }
     
@@ -300,7 +301,7 @@ vector<Vector3d> AStar::astarSearchAndGetSimplePath(const double step_size, Vect
             for (int j=0; j<=check_num; j++){
                 double alpha = double(1.0 / check_num) * j;
                 Vector3d check_safe_pt = (1 - alpha) * cut_start + alpha * check_pt;
-                if (checkOccupancy_esdf(check_safe_pt)){
+                if (checkOccupancy_esdf(check_safe_pt, dist)){
                     is_safe = false;
                     break;
                 }

@@ -28,15 +28,15 @@ namespace ego_planner
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     
     /* main planning interface */
-    bool reboundReplan(
+    bool reboundReplanForLoad(
         const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_vel, const Eigen::Vector3d &start_acc, 
         const double trajectory_start_time, const Eigen::Vector3d &end_pt, const Eigen::Vector3d &end_vel, 
-        const bool flag_polyInit, const bool flag_randomPolyTraj,
-        const bool use_formation, const bool have_local_traj);
+        const bool flag_polyInit, 
+        const bool have_local_traj);
     bool computeInitReferenceState(
         const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_vel, 
         const Eigen::Vector3d &start_acc, const Eigen::Vector3d &local_target_pt,
-        const Eigen::Vector3d &local_target_vel, const double &ts, poly_traj::MinJerkOpt &initMJO,
+        const Eigen::Vector3d &local_target_vel, poly_traj::MinJerkOpt &initMJO,
         const bool flag_polyInit);
     bool planGlobalTrajWaypoints(
         const Eigen::Vector3d &start_pos, const Eigen::Vector3d &start_vel, 
@@ -55,8 +55,6 @@ namespace ego_planner
     void setDroneIdtoOpt(void) { ploy_traj_opt_->setDroneId(pp_.drone_id); }
 
     double getSwarmClearance(void) { return ploy_traj_opt_->getSwarmClearance(); }
-
-    bool checkCollision(int drone_id);
 
     void fakeSwarmTrajs(void);
 

@@ -10,7 +10,6 @@
 #include <traj_utils/Assignment.h>
 #include "poly_traj_utils.hpp"
 #include "munkres_algorithm.hpp"
-#include <swarm_graph/swarm_graph.hpp>
 #include <fstream>
 
 namespace ego_planner
@@ -41,7 +40,6 @@ namespace ego_planner
     poly_traj::MinJerkOpt jerkOpt_;
     SwarmTrajData *swarm_trajs_{NULL}; // Can not use shared_ptr and no need to free
     ConstrainPoints cps_;
-    SwarmGraph::Ptr swarm_graph_;
 
     int drone_id_;
     int cps_num_prePiece_; // number of distinctive constrain points each piece
@@ -81,6 +79,7 @@ namespace ego_planner
     double weight_cable_length_;
     double weight_cable_colli_;
     double cable_tolerance_;
+    double load_dist_;
 
     double obs_clearance_;                   // safe distance between uav and obstacles
     double swarm_clearance_;                 // safe distance between uav and uav
@@ -88,7 +87,6 @@ namespace ego_planner
     
     int    formation_type_;
     int    formation_size_;
-    bool   use_formation_ = true;
     bool   is_other_assigning_ = false;
 
     double t_now_;
@@ -117,7 +115,7 @@ namespace ego_planner
     /* main planning API */
     bool OptimizeTrajectory_lbfgs(const Eigen::MatrixXd &iniState, const Eigen::MatrixXd &finState,
                             const Eigen::MatrixXd &initInnerPts, const Eigen::VectorXd &initT,
-                            Eigen::MatrixXd &optimal_points, const bool use_formation);
+                            Eigen::MatrixXd &optimal_points);
                                             
     void astarWithMinTraj( const Eigen::MatrixXd &iniState, 
                            const Eigen::MatrixXd &finState,
@@ -185,15 +183,6 @@ namespace ego_planner
                         double &gradt,
                         double &grad_prev_t,
                         double &costp);
-
-    bool swarmGraphGradCostP(const int i_dp,
-                             const double t,
-                             const Eigen::Vector3d &p,
-                             const Eigen::Vector3d &v,
-                             Eigen::Vector3d &gradp,
-                             double &gradt,
-                             double &grad_prev_t,
-                             double &costp);
     
     bool feasibilityGradCostV(const Eigen::Vector3d &v,
                               Eigen::Vector3d &gradv,
@@ -207,59 +196,7 @@ namespace ego_planner
                                            Eigen::MatrixXd &gdp,
                                            double &var);
     
-    void showFormationInformation(bool is_show, Eigen::Vector3d pos);
-
     bool checkCollision(void);
-
-    bool getFormationPos(std::vector<Eigen::Vector3d> &swarm_graph_pos, Eigen::Vector3d pos);
-
-    void setDesiredFormation(int type){
-      std::vector<Eigen::Vector3d> swarm_des;
-      switch (type)
-      {
-        case FORMATION_TYPE::NONE_FORMATION :
-        {
-          use_formation_  = false;
-          formation_size_ = 0;
-          break;
-        }
-
-        case FORMATION_TYPE::REGULAR_HEXAGON :
-        {
-          // set the desired formation
-          Eigen::Vector3d v0(0,0,0);
-          Eigen::Vector3d v1(1.7321,-1,0);
-          Eigen::Vector3d v2(0,-2,0);
-          Eigen::Vector3d v3(-1.7321,-1,0);
-          Eigen::Vector3d v4(-1.7321,1,0);
-          Eigen::Vector3d v5(0,2,0);
-          Eigen::Vector3d v6(1.7321,1,0);
-
-          swarm_des.push_back(v0);
-          swarm_des.push_back(v1);
-          swarm_des.push_back(v2);
-          swarm_des.push_back(v3);
-          swarm_des.push_back(v4);
-          swarm_des.push_back(v5);
-          swarm_des.push_back(v6);
-
-          formation_size_ = swarm_des.size();
-          // construct the desired swarm graph
-          swarm_graph_->setDesiredForm(swarm_des);
-          break;
-        }
-
-        case FORMATION_TYPE::TWIN_LIFT :
-        {
-          use_formation_  = false;
-          formation_size_ = 3;
-          break;
-        }
-        
-        default:
-          break;
-      }
-    }
 
   public:
 

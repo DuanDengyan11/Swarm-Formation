@@ -48,7 +48,6 @@ namespace ego_planner
     };
 
     int drone_id_;
-    int formation_type_;
     int formation_size_, line_size_;
     std::vector<int> line_begin_, line_end_;
     bool start_visual_;
@@ -65,22 +64,8 @@ namespace ego_planner
     ros::Time t_record;
 
     std::vector<Eigen::Vector3d> swarm_odom;
-
-    void drone_0_odomeCallback(const nav_msgs::OdometryConstPtr &msg);
-    void drone_1_odomeCallback(const nav_msgs::OdometryConstPtr &msg);
-    void drone_2_odomeCallback(const nav_msgs::OdometryConstPtr &msg);
-    void drone_3_odomeCallback(const nav_msgs::OdometryConstPtr &msg);
-    void drone_4_odomeCallback(const nav_msgs::OdometryConstPtr &msg);
-    void drone_5_odomeCallback(const nav_msgs::OdometryConstPtr &msg);
-    void drone_6_odomeCallback(const nav_msgs::OdometryConstPtr &msg);
-    void drone_7_odomeCallback(const nav_msgs::OdometryConstPtr &msg);
-    void drone_8_odomeCallback(const nav_msgs::OdometryConstPtr &msg);
-    void drone_9_odomeCallback(const nav_msgs::OdometryConstPtr &msg);
-    void drone_10_odomeCallback(const nav_msgs::OdometryConstPtr &msg);
-    void drone_11_odomeCallback(const nav_msgs::OdometryConstPtr &msg);
     
     void swarmGraphVisulCallback(const ros::TimerEvent &e);
-    void benchmarkCallback(const ros::TimerEvent &e);
 
   public:
 
