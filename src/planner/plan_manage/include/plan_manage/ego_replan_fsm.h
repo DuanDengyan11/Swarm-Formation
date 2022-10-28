@@ -20,7 +20,6 @@
 #include <traj_utils/planning_visualization.h>
 #include <traj_utils/PolyTraj.h>
 #include <traj_utils/Assignment.h>
-#include <cable_load/cable_load.h>
 
 #include <fstream>
 #include <iostream>
@@ -46,8 +45,6 @@ namespace ego_planner
     /* planning utils */
     EGOPlannerManager::Ptr planner_manager_;
     PlanningVisualization::Ptr visualization_;
-
-    cable_load cable_load_;
 
     /* parameters */
     double no_replan_thresh_, replan_thresh_;
