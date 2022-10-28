@@ -10,6 +10,7 @@ namespace ego_planner
   }
   void EGOReplanFSM::init(ros::NodeHandle &nh)
   {
+    exec_state_ = FSM_EXEC_STATE::INIT;  //初始设置执行器为INIT
  
     have_target_ = false; //是否接收到目标位置点
     have_odom_ = false;  //是否有里程计数据
@@ -63,40 +64,124 @@ namespace ego_planner
   void EGOReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   {
     exec_timer_.stop(); // To avoid blockage
-    ROS_INFO("have_odom_ %ld, have_target_ %ld, %d, %d, %d", have_odom_, have_target_, odom_pos_(0), odom_pos_(1), odom_pos_(2));
 
-    if(!have_odom_ || !have_target_)
-      goto force_return;
-
-    LocalTrajData *info = &planner_manager_->traj_.local_traj;
-    double t_cur = ros::Time::now().toSec() - info->start_time;
-    t_cur = min(info->duration, t_cur);
-
-    Eigen::Vector3d pos = info->traj.getPos(t_cur);
-
-    planFromGlobalTraj(1);  //plan load trajectory from global trajectory
-    if ((local_target_pt_ - end_pt_).norm() < 0.1) // local target close to the global target
+    switch (exec_state_)
     {
-      if (t_cur > info->duration - 0.2)
+    case INIT:
+    {
+      if (!have_odom_)
+      {
+        goto force_return; // return;
+      }
+      changeFSMExecState(WAIT_TARGET, "FSM");
+      break;
+    }
+
+    case WAIT_TARGET:
+    {
+      if (!have_target_)
+        goto force_return; // return;
+      else
+      {
+        changeFSMExecState(SEQUENTIAL_START, "FSM");
+      }
+      break;
+    }
+
+    case SEQUENTIAL_START: // for swarm or single drone with drone_id = 0
+    {
+      bool success = planFromGlobalTraj(1);
+      if (success)
+      {
+        changeFSMExecState(EXEC_TRAJ, "FSM");
+      }
+      else
+      {
+        ROS_ERROR("Failed to generate the first trajectory!!!");
+        changeFSMExecState(SEQUENTIAL_START, "FSM");
+      }
+
+      break;
+    }
+
+    case GEN_NEW_TRAJ:
+    {
+      bool success = planFromGlobalTraj(1);
+      if (success)
+      {
+        changeFSMExecState(EXEC_TRAJ, "FSM");
+        flag_escape_emergency_ = true;
+      }
+      else
       {
         have_target_ = false;
-        have_local_traj_ = false;
-
-        result_file_ << planner_manager_->pp_.drone_id << "\t" << (ros::Time::now() - planner_manager_->global_start_time_).toSec() << "\t" << planner_manager_->average_plan_time_ << "\n";
-
-        printf("\033[47;30m\n[drone %d reached goal]==============================================\033[0m\n",
-                 planner_manager_->pp_.drone_id);
-        std_msgs::Bool msg;
-        msg.data = true;
-        reached_pub_.publish(msg);
-        goto force_return;
-      }else if ((end_pt_ - pos).norm() > no_replan_thresh_ && t_cur > replan_thresh_)
-      {
-          planFromGlobalTraj(1);  //plan load trajectory from global trajectory
+        changeFSMExecState(WAIT_TARGET, "FSM");
       }
-    }else if (t_cur > replan_thresh_)
+      break;
+    }
+
+    case REPLAN_TRAJ:
     {
-      planFromGlobalTraj(1);  //plan load trajectory from global trajectory
+      bool success;
+      if (flag_relan_astar_)
+        success = planFromLocalTraj(true);
+      else
+        success = planFromLocalTraj(false);
+
+      if (success)
+      {
+        flag_relan_astar_ = false;
+        changeFSMExecState(EXEC_TRAJ, "FSM");
+      }
+      else
+      {
+        flag_relan_astar_ = true;
+        changeFSMExecState(REPLAN_TRAJ, "FSM");
+      }
+
+      break;
+    }
+
+    case EXEC_TRAJ:
+    {
+      /* determine if need to replan */
+      LocalTrajData *info = &planner_manager_->traj_.local_traj;
+      double t_cur = ros::Time::now().toSec() - info->start_time;
+      t_cur = min(info->duration, t_cur);
+
+      Eigen::Vector3d pos = info->traj.getPos(t_cur);
+
+      if ((local_target_pt_ - end_pt_).norm() < 0.1) // local target close to the global target
+      {
+        if (t_cur > info->duration - 0.2)
+        {
+          have_target_ = false;
+          have_local_traj_ = false;
+
+          /* The navigation task completed */
+          changeFSMExecState(WAIT_TARGET, "FSM");
+
+          result_file_ << planner_manager_->pp_.drone_id << "\t" << (ros::Time::now() - planner_manager_->global_start_time_).toSec() << "\t" << planner_manager_->average_plan_time_ << "\n";
+
+          printf("\033[47;30m\n[drone %d reached goal]==============================================\033[0m\n",
+                 planner_manager_->pp_.drone_id);
+          std_msgs::Bool msg;
+          msg.data = true;
+          reached_pub_.publish(msg);
+          goto force_return;
+        }
+        else if ((end_pt_ - pos).norm() > no_replan_thresh_ && t_cur > replan_thresh_)
+        {
+          changeFSMExecState(REPLAN_TRAJ, "FSM");
+        }
+      }
+      else if (t_cur > replan_thresh_)
+      {
+        changeFSMExecState(REPLAN_TRAJ, "FSM");
+      }
+
+      break;
+    }
     }
 
     force_return:;
@@ -274,5 +359,19 @@ namespace ego_planner
     }
 
     return plan_success;
+  }
+
+  void EGOReplanFSM::changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call)
+  {
+
+    if (new_state == exec_state_)
+      continously_called_times_++;
+    else
+      continously_called_times_ = 1;
+
+    static string state_str[7] = {"INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ", "EXEC_TRAJ", "SEQUENTIAL_START"};
+    int pre_s = int(exec_state_);
+    exec_state_ = new_state;
+    cout << "[" + pos_call + "]: from " + state_str[pre_s] + " to " + state_str[int(new_state)] << endl;
   }
 } // namespace ego_planner

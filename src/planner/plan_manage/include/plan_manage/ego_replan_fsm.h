@@ -31,7 +31,17 @@ namespace ego_planner
   class EGOReplanFSM
   {
 
-  private:    
+  private: 
+
+  enum FSM_EXEC_STATE
+    {
+      INIT,
+      WAIT_TARGET,
+      GEN_NEW_TRAJ,
+      REPLAN_TRAJ,
+      EXEC_TRAJ,
+      SEQUENTIAL_START
+    };   
     /* planning utils */
     EGOPlannerManager::Ptr planner_manager_;
     PlanningVisualization::Ptr visualization_;
