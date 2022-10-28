@@ -20,11 +20,3 @@ public:
     ~cable_load();
     void init(ros::NodeHandle &nh);
 };
-
-cable_load::cable_load(/* args */)
-{
-    
-}
-cable_load::~cable_load()
-{
-}
