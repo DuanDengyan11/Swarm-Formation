@@ -62,10 +62,8 @@ namespace ego_planner
 
   void EGOReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   {
-
-    ROS_INFO("have_odom_ %ld, have_target_ %ld", have_odom_, have_target_);
-
     exec_timer_.stop(); // To avoid blockage
+    ROS_INFO("have_odom_ %ld, have_target_ %ld", have_odom_, have_target_);
 
     if(!have_odom_ || !have_target_)
       return;
@@ -146,8 +144,6 @@ namespace ego_planner
         one_pt_wps, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()); //当前位置作为起始点，目标点作为终止点，不考虑避障等 生成全局轨迹
 
     visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(0, 0.5, 0.5, 1), 0.3, 0);
-
-    ROS_INFO("have target success %ld", success);
 
     if (success)
     {
