@@ -82,6 +82,7 @@ namespace ego_planner
     bool callReboundReplan(bool flag_use_poly_init); // front-end and back-end method
     bool planFromGlobalTraj(const int trial_times = 1);
     bool planFromLocalTraj(bool flag_use_poly_init);
+    void changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call);
 
     // void getLocalTarget();
 
