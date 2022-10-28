@@ -43,6 +43,7 @@ namespace ego_planner
     planner_manager_->initPlanModules(nh, visualization_);
     planner_manager_->deliverTrajToOptimizer(); // store trajectories
     planner_manager_->setDroneIdtoOpt();
+    planner_manager_->initCableLoad(nh);
 
     /* callback */
     exec_timer_ = nh.createTimer(ros::Duration(0.01), &EGOReplanFSM::execFSMCallback, this); //主程序 先优化吊挂物轨迹 然后优化上面的绳索
@@ -163,7 +164,7 @@ namespace ego_planner
       {
         changeFSMExecState(REPLAN_TRAJ, "FSM");
       }
-
+ 
       break;
     }
     }

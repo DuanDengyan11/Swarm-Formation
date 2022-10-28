@@ -10,6 +10,8 @@
 #include <ros/ros.h>
 #include <traj_utils/planning_visualization.h>
 #include <optimizer/poly_traj_utils.hpp>
+#include <cable_load/cable_load.h>
+
 
 namespace ego_planner
 {
@@ -64,6 +66,9 @@ namespace ego_planner
     GridMap::Ptr grid_map_;
     // SwarmTrajData swarm_trajs_;
     TrajContainer traj_;
+
+    cable_load cable_load_;
+    void initCableLoad(ros::NodeHandle &nh);
     
     // ros::Publisher obj_pub_; //zx-todo
 

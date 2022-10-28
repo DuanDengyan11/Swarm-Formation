@@ -15,6 +15,11 @@ namespace ego_planner
     std::cout << "des manager" << std::endl;
   }
 
+  void EGOPlannerManager::initCableLoad(ros::NodeHandle &nh)
+  {
+    cable_load_.init(nh);
+  }
+
   void EGOPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualization::Ptr vis)
   {
     /* read algorithm parameters */

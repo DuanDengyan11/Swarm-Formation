@@ -10,9 +10,9 @@
 #include <std_msgs/Empty.h>
 #include <std_msgs/Bool.h>
 #include <vector>
-#include <visualization_msgs/Marker.h>
-
-#include <optimizer/poly_traj_optimizer.h>
+#include <visualizat
+#include <optimizer/poly_traj_optimizion_msgs/Marker.h>
+er.h>
 #include <plan_env/grid_map.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <traj_utils/DataDisp.h>
@@ -93,6 +93,7 @@ namespace ego_planner
     void odometryCallback(const nav_msgs::OdometryConstPtr &msg);
     void polyTraj2ROSMsg(traj_utils::PolyTraj &msg);
     void formationWaypointCallback(const geometry_msgs::PoseStampedPtr &msg);
+    void cal_skew_matrix(Eigen::Vector3d x, Eigen::Matrix3d &x_hat);
 
   public:
     EGOReplanFSM(/* args */)
