@@ -10,9 +10,9 @@
 #include <std_msgs/Empty.h>
 #include <std_msgs/Bool.h>
 #include <vector>
-#include <visualizat
-#include <optimizer/poly_traj_optimizion_msgs/Marker.h>
-er.h>
+#include <visualization_msgs/Marker.h>
+
+#include <optimizer/poly_traj_optimizer.h>
 #include <plan_env/grid_map.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <traj_utils/DataDisp.h>
@@ -20,6 +20,7 @@ er.h>
 #include <traj_utils/planning_visualization.h>
 #include <traj_utils/PolyTraj.h>
 #include <traj_utils/Assignment.h>
+#include <cable_load/cable_load.h>
 
 #include <fstream>
 #include <iostream>
@@ -45,6 +46,8 @@ namespace ego_planner
     /* planning utils */
     EGOPlannerManager::Ptr planner_manager_;
     PlanningVisualization::Ptr visualization_;
+
+    cable_load cable_load_;
 
     /* parameters */
     double no_replan_thresh_, replan_thresh_;
