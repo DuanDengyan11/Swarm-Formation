@@ -363,12 +363,6 @@ namespace ego_planner
 
   void EGOReplanFSM::changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call)
   {
-
-    if (new_state == exec_state_)
-      continously_called_times_++;
-    else
-      continously_called_times_ = 1;
-
     static string state_str[7] = {"INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ", "EXEC_TRAJ", "SEQUENTIAL_START"};
     int pre_s = int(exec_state_);
     exec_state_ = new_state;
