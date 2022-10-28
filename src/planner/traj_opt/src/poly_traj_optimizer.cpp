@@ -770,7 +770,6 @@ namespace ego_planner
     nh.param("optimization/weight_feasibility", wei_feas_, -1.0);
     nh.param("optimization/weight_sqrvariance", wei_sqrvar_, -1.0);
     nh.param("optimization/weight_time", wei_time_, -1.0);
-    nh.param("optimization/weight_formation", wei_formation_, -1.0);
     nh.param("optimization/cable_length", cable_length_, 2.0);
     nh.param("optimization/cable_num", cable_num_, 10);
     nh.param("optimization/weight_cable_length", weight_cable_length_, -1.0);

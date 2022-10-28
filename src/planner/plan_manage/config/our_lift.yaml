@@ -21,8 +21,7 @@ optimization:
   weight_feasibility  : 10000.0
   weight_sqrvariance  : 10000.0
   weight_time         : 80.0
-  weight_formation    : 0.0
-  obstacle_clearance  : 0.5
+  obstacle_clearance  : 1.0
   swarm_clearance     : 0.5
   cable_length        : 2.1213203435596424
   cable_num           : 10

@@ -73,7 +73,6 @@ namespace ego_planner
     double wei_feas_;                        // feasibility weight
     double wei_sqrvar_;                      // squared variance weight
     double wei_time_;                        // time weight
-    double wei_formation_;                   // swarm formation simllarity
     double cable_length_;                    // cable length 
     int cable_num_;
     double weight_cable_length_;
