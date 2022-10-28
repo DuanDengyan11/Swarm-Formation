@@ -112,7 +112,7 @@ namespace ego_planner
     double getCollisionCheckTimeEnd() { return collision_check_time_end_; }
 
     /* main planning API */
-    bool OptimizeTrajectory_lbfgs(const Eigen::MatrixXd &iniState, const Eigen::MatrixXd &finState,
+    bool OptimizeTrajectory_lbfgs_forLoad(const Eigen::MatrixXd &iniState, const Eigen::MatrixXd &finState,
                             const Eigen::MatrixXd &initInnerPts, const Eigen::VectorXd &initT,
                             Eigen::MatrixXd &optimal_points);
                                             
@@ -126,7 +126,7 @@ namespace ego_planner
   
   private:
     /* callbacks by the L-BFGS optimizer */
-    static double costFunctionCallback(void *func_data, const double *x, double *grad, const int n);
+    static double costFunctionCallback_forLoad(void *func_data, const double *x, double *grad, const int n);
 
     static int earlyExitCallback(void *func_data, const double *x, const double *g,
                                  const double fx, const double xnorm, const double gnorm,

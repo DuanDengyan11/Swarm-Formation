@@ -21,14 +21,14 @@ optimization:
   weight_feasibility  : 10000.0
   weight_sqrvariance  : 10000.0
   weight_time         : 80.0
-  obstacle_clearance  : 1.0
+  obstacle_clearance  : 3.0
   swarm_clearance     : 0.5
   cable_length        : 2.1213203435596424
   cable_num           : 10
   weight_cable_length : 10000.0
   weight_cable_colli  : 0.0
   cable_tolerance     : 0.05
-  load_dist           : 1.0
+  load_dist           : 3.0
 
 fsm:
   replan_trajectory_time : 0.1    # s, the max time of replanning trajectory

@@ -4,7 +4,7 @@
 namespace ego_planner
 {
   /* main planning API */
-  bool PolyTrajOptimizer::OptimizeTrajectory_lbfgs(
+  bool PolyTrajOptimizer::OptimizeTrajectory_lbfgs_forLoad(
       const Eigen::MatrixXd &iniState, const Eigen::MatrixXd &finState,
       const Eigen::MatrixXd &initInnerPts, const Eigen::VectorXd &initT,
       Eigen::MatrixXd &optimal_points)
@@ -52,7 +52,7 @@ namespace ego_planner
         variable_num_,
         q,
         &final_cost,
-        PolyTrajOptimizer::costFunctionCallback,
+        PolyTrajOptimizer::costFunctionCallback_forLoad,
         NULL,
         PolyTrajOptimizer::earlyExitCallback,
         this,
@@ -108,7 +108,7 @@ namespace ego_planner
   }
 
   /* callbacks by the L-BFGS optimizer */
-  double PolyTrajOptimizer::costFunctionCallback(void *func_data, const double *x, double *grad, const int n)
+  double PolyTrajOptimizer::costFunctionCallback_forLoad(void *func_data, const double *x, double *grad, const int n)
   {
     PolyTrajOptimizer *opt = reinterpret_cast<PolyTrajOptimizer *>(func_data);
 
@@ -260,49 +260,7 @@ namespace ego_planner
           gdT(i) += omg * (costp / K + step * gradViolaPt);
           costs(0) += omg * step * costp;
         }
-        
-        // to avoid cable collision and keep cable length  new add
-        double gradt, grad_prev_t;
-        if (CableCollisionGradCostP(i_dp, t + step * j, pos, vel, gradp, gradt, grad_prev_t, costp))
-        {
-          gradViolaPc = beta0 * gradp.transpose();
-          gradViolaPt = alpha * gradt;
-          jerkOpt_.get_gdC().block<6, 3>(i * 6, 0) += omg * step * gradViolaPc;
-          gdT(i) += omg * (costp / K + step * gradViolaPt);
-          if (i > 0)
-          {
-            gdT.head(i).array() += omg * step * grad_prev_t;
-          }
-          costs(2) += omg * step * costp;
-        }
-
-        if (CableLengthGradCostP(i_dp, t + step * j, pos, vel, gradp, gradt, grad_prev_t, costp))
-        {
-          gradViolaPc = beta0 * gradp.transpose();
-          gradViolaPt = alpha * gradt;
-          jerkOpt_.get_gdC().block<6, 3>(i * 6, 0) += omg * step * gradViolaPc;
-          gdT(i) += omg * (costp / K + step * gradViolaPt);
-          if (i > 0)
-          {
-            gdT.head(i).array() += omg * step * grad_prev_t;
-          }
-          costs(3) += omg * step * costp;
-        }
-
-        // swarm
-        // double gradt, grad_prev_t;
-        if (swarmGradCostP(i_dp, t + step * j, pos, vel, gradp, gradt, grad_prev_t, costp))
-        {
-          gradViolaPc = beta0 * gradp.transpose();
-          gradViolaPt = alpha * gradt;
-          jerkOpt_.get_gdC().block<6, 3>(i * 6, 0) += omg * step * gradViolaPc;
-          gdT(i) += omg * (costp / K + step * gradViolaPt);
-          if (i > 0)
-          {
-            gdT.head(i).array() += omg * step * grad_prev_t;
-          }
-          costs(1) += omg * step * costp;
-        }
+  
         // feasibility
         if (feasibilityGradCostV(vel, gradv, costv))
         {
