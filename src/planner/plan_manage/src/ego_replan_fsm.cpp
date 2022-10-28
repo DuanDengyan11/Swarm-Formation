@@ -66,7 +66,7 @@ namespace ego_planner
     ROS_INFO("have_odom_ %ld, have_target_ %ld", have_odom_, have_target_);
 
     if(!have_odom_ || !have_target_)
-      return;
+      goto force_return;
     
     planFromGlobalTraj(1);  //plan load trajectory from global trajectory
 
