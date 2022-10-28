@@ -104,22 +104,6 @@ namespace ego_planner
       break;
     }
 
-    case GEN_NEW_TRAJ:
-    {
-      bool success = planFromGlobalTraj(1);
-      if (success)
-      {
-        changeFSMExecState(EXEC_TRAJ, "FSM");
-        flag_escape_emergency_ = true;
-      }
-      else
-      {
-        have_target_ = false;
-        changeFSMExecState(WAIT_TARGET, "FSM");
-      }
-      break;
-    }
-
     case REPLAN_TRAJ:
     {
       bool success;

@@ -61,7 +61,8 @@ namespace ego_planner
     /* planning data */
     bool have_trigger_, have_target_, have_odom_, have_new_target_, have_local_traj_;
     FSM_EXEC_STATE exec_state_;
-    
+    bool flag_relan_astar_;
+
     Eigen::Vector3d odom_pos_, odom_vel_, odom_acc_; // odometry state
     Eigen::Quaterniond odom_orient_;
 
