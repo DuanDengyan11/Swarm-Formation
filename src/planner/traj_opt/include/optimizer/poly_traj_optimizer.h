@@ -60,13 +60,6 @@ namespace ego_planner
       STOP_FOR_ERROR
     } force_stop_type_;
 
-    enum FORMATION_TYPE
-    {
-      NONE_FORMATION        = 0,
-      REGULAR_HEXAGON       = 1,
-      TWIN_LIFT = 2
-    };
-
     /* optimization parameters */
     double wei_obs_;                         // obstacle weight
     double wei_swarm_;                       // swarm weight

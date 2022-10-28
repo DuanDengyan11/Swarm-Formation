@@ -40,13 +40,6 @@ namespace ego_planner
 
     ros::Publisher swarm_formation_visual_pub;
 
-    enum FORMATION_TYPE
-    {
-      NONE_FORMATION        = 0,
-      REGULAR_HEXAGON       = 1,
-      TWIN_LIFT = 2
-    };
-
     int drone_id_;
     int formation_size_, line_size_;
     std::vector<int> line_begin_, line_end_;
