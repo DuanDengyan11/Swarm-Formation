@@ -228,7 +228,7 @@ namespace ego_planner
     Eigen::Matrix<double, 3, 3> headState, tailState;
     headState << initTraj.getJuncPos(0), initTraj.getJuncVel(0), initTraj.getJuncAcc(0);
     tailState << initTraj.getJuncPos(PN), initTraj.getJuncVel(PN), initTraj.getJuncAcc(PN);
-    flag_success = ploy_traj_opt_->OptimizeTrajectory_lbfgs(headState, tailState,
+    flag_success = ploy_traj_opt_->OptimizeTrajectory_lbfgs_forLoad(headState, tailState,
                                                             innerPts, initTraj.getDurations(),
                                                             cstr_pts);
  

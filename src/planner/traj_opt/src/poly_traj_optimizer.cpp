@@ -737,7 +737,6 @@ namespace ego_planner
 
     nh.param("optimization/obstacle_clearance", obs_clearance_, -1.0);
     nh.param("optimization/swarm_clearance", swarm_clearance_, -1.0);
-    nh.param("optimization/formation_type", formation_type_, -1);
     nh.param("optimization/max_vel", max_vel_, -1.0);
     nh.param("optimization/max_acc", max_acc_, -1.0);
 
