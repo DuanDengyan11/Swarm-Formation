@@ -63,7 +63,7 @@ namespace ego_planner
   void EGOReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   {
     exec_timer_.stop(); // To avoid blockage
-    ROS_INFO("have_odom_ %ld, have_target_ %ld", have_odom_, have_target_);
+    ROS_INFO("have_odom_ %ld, have_target_ %ld, %d, %d, %d", have_odom_, have_target_, odom_pos_(0), odom_pos_(1), odom_pos_(2));
 
     if(!have_odom_ || !have_target_)
       goto force_return;
