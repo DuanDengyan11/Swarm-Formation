@@ -67,8 +67,37 @@ namespace ego_planner
 
     if(!have_odom_ || !have_target_)
       goto force_return;
-    
+
+    LocalTrajData *info = &planner_manager_->traj_.local_traj;
+    double t_cur = ros::Time::now().toSec() - info->start_time;
+    t_cur = min(info->duration, t_cur);
+
+    Eigen::Vector3d pos = info->traj.getPos(t_cur);
+
     planFromGlobalTraj(1);  //plan load trajectory from global trajectory
+    if ((local_target_pt_ - end_pt_).norm() < 0.1) // local target close to the global target
+    {
+      if (t_cur > info->duration - 0.2)
+      {
+        have_target_ = false;
+        have_local_traj_ = false;
+
+        result_file_ << planner_manager_->pp_.drone_id << "\t" << (ros::Time::now() - planner_manager_->global_start_time_).toSec() << "\t" << planner_manager_->average_plan_time_ << "\n";
+
+        printf("\033[47;30m\n[drone %d reached goal]==============================================\033[0m\n",
+                 planner_manager_->pp_.drone_id);
+        std_msgs::Bool msg;
+        msg.data = true;
+        reached_pub_.publish(msg);
+        goto force_return;
+      }else if ((end_pt_ - pos).norm() > no_replan_thresh_ && t_cur > replan_thresh_)
+      {
+          planFromGlobalTraj(1);  //plan load trajectory from global trajectory
+      }
+    }else if (t_cur > replan_thresh_)
+    {
+      planFromGlobalTraj(1);  //plan load trajectory from global trajectory
+    }
 
     force_return:;
     exec_timer_.start();
