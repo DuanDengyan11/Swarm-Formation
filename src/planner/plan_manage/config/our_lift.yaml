@@ -16,7 +16,7 @@ global_goal:
 # map_size_z          : 3.0
 optimization:
   formation_type      : 2
-  weight_obstacle     : 50000.0
+  weight_obstacle     : 100000.0
   weight_swarm        : 50000.0
   weight_feasibility  : 10000.0
   weight_sqrvariance  : 10000.0
@@ -28,7 +28,7 @@ optimization:
   weight_cable_length : 10000.0
   weight_cable_colli  : 0.0
   cable_tolerance     : 0.05
-  load_dist           : 0.1
+  load_dist           : 1.0
 
 fsm:
   replan_trajectory_time : 0.1    # s, the max time of replanning trajectory
