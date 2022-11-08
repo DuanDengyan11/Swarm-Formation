@@ -176,6 +176,8 @@ namespace ego_planner
     odom_orient_.z() = msg->pose.pose.orientation.z;
 
     have_odom_ = true;
+
+    ROS_INFO("have odom");
   }
 
   void EGOReplanFSM::polyTraj2ROSMsg(traj_utils::PolyTraj &msg)
