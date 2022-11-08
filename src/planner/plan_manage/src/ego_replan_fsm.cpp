@@ -362,6 +362,7 @@ namespace ego_planner
     //   //不确定是否需要将规划成功的轨迹 发布出去
     // }
     // return plan_success;
+    return true;
   }
 
   void EGOReplanFSM::changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call)
