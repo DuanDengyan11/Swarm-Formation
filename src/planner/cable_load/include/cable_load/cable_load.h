@@ -9,6 +9,7 @@ class cable_load
 private:
 
     double length_, height_, width_;
+    ros::NodeHandle node_;
     
 public:
     cable_load(){};
