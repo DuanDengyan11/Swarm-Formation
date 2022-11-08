@@ -53,8 +53,6 @@ namespace ego_planner
 
      // global goal setting for swarm
     Eigen::Vector3d swarm_central_pos_;
-    double cable_length_;
-    double m_load_;
 
     /* planning data */
     bool have_target_, have_odom_, have_new_target_, have_local_traj_;

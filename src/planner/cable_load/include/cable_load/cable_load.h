@@ -20,6 +20,4 @@ public:
     Eigen::MatrixXd G_null_space;
 
     Eigen::Matrix3d cal_skew_matrix(Eigen::Vector3d x);
-
-
 };

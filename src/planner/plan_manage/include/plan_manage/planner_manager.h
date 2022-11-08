@@ -10,7 +10,6 @@
 #include <ros/ros.h>
 #include <traj_utils/planning_visualization.h>
 #include <optimizer/poly_traj_utils.hpp>
-#include <cable_load/cable_load.h>
 
 namespace ego_planner
 {
