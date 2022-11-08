@@ -18,13 +18,13 @@ namespace ego_planner
     have_local_traj_cable_ = false; //有没有上次规划好的local cable轨迹
     flag_relan_astar_ = true; //是否需要重新astar规划
 
-    // /*  fsm param  */
-    // nh.param("fsm/thresh_replan_time", replan_thresh_, -1.0);  // = 1s
-    // nh.param("fsm/thresh_no_replan_meter", no_replan_thresh_, -1.0); // = 1m
-    // nh.param("fsm/planning_horizon", planning_horizen_, -1.0); // = 7.5m 预测距离
-    // nh.param("fsm/planning_horizen_time", planning_horizen_time_, -1.0); // = 3s 预测时间
-    // nh.param("fsm/result_file", result_fn_, string("/home/zuzu/Documents/Benchmark/21-RSS-ego-swarm/2.24/ego/ego_swarm.txt")); // 保存结果文件的地方
-    // nh.param("fsm/replan_trajectory_time", replan_trajectory_time_, 0.0); // = 0.1s 重新规划算法的时间
+    /*  fsm param  */
+    nh.param("fsm/thresh_replan_time", replan_thresh_, -1.0);  // = 1s
+    nh.param("fsm/thresh_no_replan_meter", no_replan_thresh_, -1.0); // = 1m
+    nh.param("fsm/planning_horizon", planning_horizen_, -1.0); // = 7.5m 预测距离
+    nh.param("fsm/planning_horizen_time", planning_horizen_time_, -1.0); // = 3s 预测时间
+    nh.param("fsm/result_file", result_fn_, string("/home/zuzu/Documents/Benchmark/21-RSS-ego-swarm/2.24/ego/ego_swarm.txt")); // 保存结果文件的地方
+    nh.param("fsm/replan_trajectory_time", replan_trajectory_time_, 0.0); // = 0.1s 重新规划算法的时间
 
     // /* initialize main modules */
     // visualization_.reset(new PlanningVisualization(nh));
