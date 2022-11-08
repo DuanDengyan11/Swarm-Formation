@@ -3,9 +3,9 @@
 void cable_load::init(ros::NodeHandle &nh)
 {  
     node_ = nh;
-    node_.param("optimization/load_length", length_ , 1.0);  //吊挂物长宽高
-    node_.param("optimization/load_width", width_ , 1.0);
-    node_.param("optimization/load_height", height_ , 1.0);
+    // node_.param("optimization/load_length", length_ , 1.0);  //吊挂物长宽高
+    // node_.param("optimization/load_width", width_ , 1.0);
+    // node_.param("optimization/load_height", height_ , 1.0);
 
     // double half_length = length_/2.0, half_width = width_/2.0, half_height = height_/2.0;
 
