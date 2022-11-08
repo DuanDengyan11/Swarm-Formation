@@ -38,7 +38,7 @@ namespace ego_planner
   private:
     GridMap::Ptr grid_map_;
 
-    cable_load cable_load_;
+    cable_load::Ptr cable_load_;
     
     AStar::Ptr a_star_;
     poly_traj::MinJerkOpt jerkOpt_;
@@ -99,7 +99,7 @@ namespace ego_planner
 
     /* set variables */
     void setParam(ros::NodeHandle &nh);
-    void setEnvironment(const GridMap::Ptr &map, const cable_load &CLoad);
+    void setEnvironment(const GridMap::Ptr &map, const cable_load::Ptr &CLoad);
     void setControlPoints(const Eigen::MatrixXd &points);
     void setSwarmTrajs(SwarmTrajData *swarm_trajs_ptr);
     void setDroneId(const int drone_id);

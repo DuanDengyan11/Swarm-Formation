@@ -93,7 +93,7 @@ namespace ego_planner
     //calculate the position of cable points
     for (size_t i = 0; i < 4; i++)
     {
-      Eigen::Vector3d point_position = position + cable_load_.cable_points[i];
+      Eigen::Vector3d point_position = position + cable_load_->cable_points[i];
       points_positions.push_back(point_position);
     }
 
@@ -868,7 +868,7 @@ namespace ego_planner
     // set the formation type
   }
 
-  void PolyTrajOptimizer::setEnvironment(const GridMap::Ptr &map, const cable_load &CLoad)
+  void PolyTrajOptimizer::setEnvironment(const GridMap::Ptr &map, const cable_load::Ptr &CLoad)
   {
     grid_map_ = map;
 
