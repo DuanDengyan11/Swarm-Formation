@@ -78,11 +78,13 @@ namespace ego_planner
 
   bool PolyTrajOptimizer::OptimizeTrajectory_lbfgs_forCable0(Eigen::MatrixXd accs, Eigen::MatrixXd positions, Eigen::VectorXd durations)
   { 
-    double cable_coef[6];
-    for (size_t i = 0; i < accs.size(); i++)
-    {
-      OptimizeTrajectory_lbfgs_forCable(accs.col(i), positions.col(i), cable_coef);
-    }
+    // double cable_coef[6];
+    // for (size_t i = 0; i < accs.size(); i++)
+    // {
+    //   OptimizeTrajectory_lbfgs_forCable(accs.col(i), positions.col(i), cable_coef);
+    // }
+    
+    return true;
 
     //上面的函数输出 cable_coefs 与 durations 一起，基于 minco 生成一组轨迹
 
