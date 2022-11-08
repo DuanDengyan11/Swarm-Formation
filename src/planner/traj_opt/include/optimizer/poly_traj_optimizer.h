@@ -136,7 +136,7 @@ namespace ego_planner
     void addFeasibilityForCable(Eigen::MatrixXd FMeach, Eigen::VectorXd &grad, Eigen::VectorXd &cost);
     void addCollisionForCable(Eigen::MatrixXd FMeach, Eigen::VectorXd &grad, Eigen::VectorXd &cost);
     void addSwarmForCable(Eigen::MatrixXd FMeach, Eigen::VectorXd &grad, Eigen::VectorXd &cost);
-    
+
     static int earlyExitCallback_forCable(void *func_data, const double *x, const double *g, const double fx, const double xnorm, const double gnorm, const double step, int n, int k, int ls);
 
     static int earlyExitCallback(void *func_data, const double *x, const double *g,
@@ -161,15 +161,6 @@ namespace ego_planner
 
     template <typename EIGENVEC>
     void addPVAGradCost2CT(EIGENVEC &gdT, Eigen::VectorXd &costs, const int &K);
-
-    bool CableCollisionGradCostP(const int i_dp,
-                                         const double t,
-                                         const Eigen::Vector3d &p,
-                                         const Eigen::Vector3d &v,
-                                         Eigen::Vector3d &gradp,
-                                         double &gradt,
-                                         double &grad_prev_t,
-                                         double &costp);
 
     bool CableLengthGradCostP(const int i_dp,
                                          const double t,
