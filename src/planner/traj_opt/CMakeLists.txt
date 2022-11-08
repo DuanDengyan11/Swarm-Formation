@@ -24,7 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES traj_opt
- CATKIN_DEPENDS plan_env 
+ CATKIN_DEPENDS plan_env cable_load
 #  DEPENDS system_lib
 )
 

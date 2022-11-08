@@ -11,7 +11,7 @@ private:
     double length_, height_, width_;
     
 public:
-    cable_load(/* args */);
+    cable_load(){};
     ~cable_load();
     void init(ros::NodeHandle &nh);
 
