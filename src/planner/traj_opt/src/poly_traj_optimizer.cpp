@@ -159,8 +159,8 @@ namespace ego_planner
     Eigen::Map<const Eigen::VectorXd> cable_coef(x, 6);
     Eigen::Map<Eigen::VectorXd> grad_cable_coef(grad, 6);
 
-    Eigen::MatrixXd space = opt->cable_load_.G_null_space;
-    Eigen::Matrix<double, 12, 6> G_inv = opt->cable_load_.G_inv;
+    Eigen::MatrixXd space = opt->cable_load_->G_null_space;
+    Eigen::Matrix<double, 12, 6> G_inv = opt->cable_load_->G_inv;
     Eigen::Matrix<double, 6, 1> FM = opt->FM;
 
     Eigen::VectorXd FM_each = G_inv*FM + space*cable_coef;
@@ -190,7 +190,7 @@ namespace ego_planner
     cost.setZero();
     grad.setZero();
     
-    Eigen::MatrixXd space = cable_load_.G_null_space;
+    Eigen::MatrixXd space = cable_load_->G_null_space;
     
     int index = 0;
     for (size_t i = 0; i < 4; i++)
@@ -225,7 +225,7 @@ namespace ego_planner
     cost.setZero(); 
     grad.setZero();
 
-    Eigen::MatrixXd space = cable_load_.G_null_space;
+    Eigen::MatrixXd space = cable_load_->G_null_space;
     
     double dist, dist_err;
     for (size_t i = 0; i < 4; i++)
@@ -252,7 +252,7 @@ namespace ego_planner
     cost.setZero(); 
     grad.setZero();
 
-    Eigen::MatrixXd space = cable_load_.G_null_space;
+    Eigen::MatrixXd space = cable_load_->G_null_space;
 
     // FMeach(0) < 0, FMeach(1) < 0, FMeach(2) < 0
     if(FMeach(0) >= 0)
