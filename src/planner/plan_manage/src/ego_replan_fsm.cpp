@@ -30,23 +30,23 @@ namespace ego_planner
     visualization_.reset(new PlanningVisualization(nh));
     planner_manager_.reset(new EGOPlannerManager);
     planner_manager_->initPlanModules(nh, visualization_);
-    // planner_manager_->deliverTrajToOptimizer(); // store trajectories
-    // planner_manager_->setDroneIdtoOpt();
+    planner_manager_->deliverTrajToOptimizer(); // store trajectories
+    planner_manager_->setDroneIdtoOpt();
 
-    // /* callback */
-    // // exec_timer_ = nh.createTimer(ros::Duration(0.01), &EGOReplanFSM::execFSMCallback, this); //主程序 先优化吊挂物轨迹 然后优化上面的绳索
+    /* callback */
+    exec_timer_ = nh.createTimer(ros::Duration(0.01), &EGOReplanFSM::execFSMCallback, this); //主程序 先优化吊挂物轨迹 然后优化上面的绳索
 
-    // odom_sub_ = nh.subscribe("odom_world", 1, &EGOReplanFSM::odometryCallback, this); //接收到的odom消息，our_lift中我们设定为吊挂物当前位置
+    odom_sub_ = nh.subscribe("odom_world", 1, &EGOReplanFSM::odometryCallback, this); //接收到的odom消息，our_lift中我们设定为吊挂物当前位置
 
-    // //要发给odom的 
-    // poly_traj_pub_ = nh.advertise<traj_utils::PolyTraj>("planning/trajectory", 10);
-    // start_pub_ = nh.advertise<std_msgs::Bool>("planning/start", 1);
-    // reached_pub_ = nh.advertise<std_msgs::Bool>("planning/finish", 1);
+    //要发给odom的 
+    poly_traj_pub_ = nh.advertise<traj_utils::PolyTraj>("planning/trajectory", 10);
+    start_pub_ = nh.advertise<std_msgs::Bool>("planning/start", 1);
+    reached_pub_ = nh.advertise<std_msgs::Bool>("planning/finish", 1);
 
-    // //记录优化结果
-    // result_file_.open(result_fn_, ios::app);
+    //记录优化结果
+    result_file_.open(result_fn_, ios::app);
 
-    // central_goal = nh.subscribe("/move_base_simple/goal", 1, &EGOReplanFSM::formationWaypointCallback, this); //地图上鼠标发来的目标位置
+    central_goal = nh.subscribe("/move_base_simple/goal", 1, &EGOReplanFSM::formationWaypointCallback, this); //地图上鼠标发来的目标位置
 
   }
 
