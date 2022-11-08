@@ -868,7 +868,7 @@ namespace ego_planner
     // set the formation type
   }
 
-  void PolyTrajOptimizer::setEnvironment(const GridMap::Ptr &map, const cable_load cable_load)
+  void PolyTrajOptimizer::setEnvironment(const GridMap::Ptr &map, const cable_load &cable_load)
   {
     grid_map_ = map;
 
