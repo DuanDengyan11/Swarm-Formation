@@ -354,7 +354,7 @@ namespace ego_planner
     
     //先装作无人机姿态角不变， 其实可以通过微分平坦算出来
 
-    bool plan_success = ReboundReplanForCable(accs, positions, durations);
+    bool plan_success = planner_manager_->ReboundReplanForCable(accs, positions, durations);
 
     if (plan_success)
     {
