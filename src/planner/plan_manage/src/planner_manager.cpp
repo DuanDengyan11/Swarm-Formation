@@ -35,7 +35,7 @@ namespace ego_planner
 
     ploy_traj_opt_.reset(new PolyTrajOptimizer);
     ploy_traj_opt_->setParam(nh);
-    ploy_traj_opt_->setEnvironment(grid_map_, cable_load_);
+    // ploy_traj_opt_->setEnvironment(grid_map_, cable_load_);
 
     visualization_ = vis;
 
