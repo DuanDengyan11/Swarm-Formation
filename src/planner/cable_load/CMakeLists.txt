@@ -114,7 +114,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES cable_load
-#  CATKIN_DEPENDS roscpp std_msgs
+ CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
 )
 
@@ -136,6 +136,7 @@ add_library(cable_load
   )
 target_link_libraries(cable_load 
   ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
   )
 
 ## Declare a C++ library
