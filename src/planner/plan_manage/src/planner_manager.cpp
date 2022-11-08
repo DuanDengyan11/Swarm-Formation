@@ -31,6 +31,7 @@ namespace ego_planner
     grid_map_.reset(new GridMap);
     grid_map_->initMap(nh);
 
+    cable_load_.reset(new cable_load);
     cable_load_->init(nh);
 
     ploy_traj_opt_.reset(new PolyTrajOptimizer);
