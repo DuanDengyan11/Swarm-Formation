@@ -213,7 +213,7 @@ namespace ego_planner
         {
           cost(index) = weight_uav_swarm_ * pow(dist_err,3);
           
-          grad += weight_uav_swarm_ * 3*dist_err^2 * ( Gj.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qj*qj.transpose()) / FMj.norm()).transpose() - Gi.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qi*qi.transpose()) / FMi.norm()).transpose() ) * (-2) * dist_vector;
+          grad += weight_uav_swarm_ * pow(dist_err, 2) * ( Gj.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qj*qj.transpose()) / FMj.norm()).transpose() - Gi.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qi*qi.transpose()) / FMi.norm()).transpose() ) * (-2) * dist_vector;
         }
         index++;
       }
