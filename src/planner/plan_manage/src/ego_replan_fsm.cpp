@@ -333,37 +333,37 @@ namespace ego_planner
     }
 
     //for cables
-    if (plan_success)
-    {
-      bool cable_success = callReboundReplanForCable(have_local_traj_cable_);
-      if (cable_success)
-      {
-        have_local_traj_cable_ = true;
-      }
-    }
+    // if (plan_success)
+    // {
+    //   bool cable_success = callReboundReplanForCable(have_local_traj_cable_);
+    //   if (cable_success)
+    //   {
+    //     have_local_traj_cable_ = true;
+    //   }
+    // }
 
     return plan_success;
   }
 
-  bool EGOReplanFSM::callReboundReplanForCable(bool have_local)
-  {
-    bool cable_success = false;
-    LocalTrajData *info = &planner_manager_->traj_.local_traj;
+  // bool EGOReplanFSM::callReboundReplanForCable(bool have_local)
+  // {
+  //   bool cable_success = false;
+  //   LocalTrajData *info = &planner_manager_->traj_.local_traj;
 
-    Eigen::MatrixXd accs = info->traj.getAccs();
-    Eigen::MatrixXd positions = info->traj.getPositions();
-    Eigen::VectorXd durations = info->traj.getDurations();
+  //   Eigen::MatrixXd accs = info->traj.getAccs();
+  //   Eigen::MatrixXd positions = info->traj.getPositions();
+  //   Eigen::VectorXd durations = info->traj.getDurations();
     
-    //先装作无人机姿态角不变， 其实可以通过微分平坦算出来
+  //   //先装作无人机姿态角不变， 其实可以通过微分平坦算出来
 
-    bool plan_success = planner_manager_->ReboundReplanForCable(accs, positions, durations);
+  //   bool plan_success = planner_manager_->ReboundReplanForCable(accs, positions, durations);
 
-    if (plan_success)
-    {
-      //不确定是否需要将规划成功的轨迹 发布出去
-    }
-    return plan_success;
-  }
+  //   if (plan_success)
+  //   {
+  //     //不确定是否需要将规划成功的轨迹 发布出去
+  //   }
+  //   return plan_success;
+  // }
 
   void EGOReplanFSM::changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call)
   {

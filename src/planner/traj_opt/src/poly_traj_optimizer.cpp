@@ -88,39 +88,39 @@ namespace ego_planner
 
   }
 
-  bool PolyTrajOptimizer::OptimizeTrajectory_lbfgs_forCable(Eigen::Vector3d acc, Eigen::Vector3d position, double cable_coef[6])
-  {
-    //calculate the position of cable points
-    for (size_t i = 0; i < 4; i++)
-    {
-      Eigen::Vector3d point_position = position + cable_load_->cable_points[i];
-      points_positions.push_back(point_position);
-    }
+  // bool PolyTrajOptimizer::OptimizeTrajectory_lbfgs_forCable(Eigen::Vector3d acc, Eigen::Vector3d position, double cable_coef[6])
+  // {
+  //   //calculate the position of cable points
+  //   for (size_t i = 0; i < 4; i++)
+  //   {
+  //     Eigen::Vector3d point_position = position + cable_load_->cable_points[i];
+  //     points_positions.push_back(point_position);
+  //   }
 
-    FM << load_mass_ * acc, 0.0, 0.0, 0.0;
+  //   FM << load_mass_ * acc, 0.0, 0.0, 0.0;
 
-    double final_cost;
+  //   double final_cost;
 
-    lbfgs::lbfgs_parameter_t lbfgs_params;
-    lbfgs::lbfgs_load_default_parameters(&lbfgs_params);
-    lbfgs_params.mem_size = 16;
-    lbfgs_params.g_epsilon = 0.1;
-    lbfgs_params.min_step = 1e-32;
-    lbfgs_params.max_iterations = 60; // 200
+  //   lbfgs::lbfgs_parameter_t lbfgs_params;
+  //   lbfgs::lbfgs_load_default_parameters(&lbfgs_params);
+  //   lbfgs_params.mem_size = 16;
+  //   lbfgs_params.g_epsilon = 0.1;
+  //   lbfgs_params.min_step = 1e-32;
+  //   lbfgs_params.max_iterations = 60; // 200
 
-    int result = lbfgs::lbfgs_optimize(
-        6,
-        cable_coef,
-        &final_cost,
-        PolyTrajOptimizer::costFunctionCallback_forCable,
-        NULL,
-        PolyTrajOptimizer::earlyExitCallback_forCable,
-        this,
-        &lbfgs_params);
+  //   int result = lbfgs::lbfgs_optimize(
+  //       6,
+  //       cable_coef,
+  //       &final_cost,
+  //       PolyTrajOptimizer::costFunctionCallback_forCable,
+  //       NULL,
+  //       PolyTrajOptimizer::earlyExitCallback_forCable,
+  //       this,
+  //       &lbfgs_params);
 
-    return true;
+  //   return true;
 
-  }
+  // }
 
   bool PolyTrajOptimizer::checkCollision(void)
   {
@@ -153,182 +153,182 @@ namespace ego_planner
     return occ;
   }
 
-  double PolyTrajOptimizer::costFunctionCallback_forCable(void *func_data, const double *x, double *grad, const int n)
-  {
-    PolyTrajOptimizer *opt = reinterpret_cast<PolyTrajOptimizer *>(func_data);
-    Eigen::Map<const Eigen::VectorXd> cable_coef(x, 6);
-    Eigen::Map<Eigen::VectorXd> grad_cable_coef(grad, 6);
+  // double PolyTrajOptimizer::costFunctionCallback_forCable(void *func_data, const double *x, double *grad, const int n)
+  // {
+  //   PolyTrajOptimizer *opt = reinterpret_cast<PolyTrajOptimizer *>(func_data);
+  //   Eigen::Map<const Eigen::VectorXd> cable_coef(x, 6);
+  //   Eigen::Map<Eigen::VectorXd> grad_cable_coef(grad, 6);
 
-    Eigen::MatrixXd space = opt->cable_load_->G_null_space;
-    Eigen::Matrix<double, 12, 6> G_inv = opt->cable_load_->G_inv;
-    Eigen::Matrix<double, 6, 1> FM = opt->FM;
+  //   Eigen::MatrixXd space = opt->cable_load_->G_null_space;
+  //   Eigen::Matrix<double, 12, 6> G_inv = opt->cable_load_->G_inv;
+  //   Eigen::Matrix<double, 6, 1> FM = opt->FM;
 
-    Eigen::VectorXd FM_each = G_inv*FM + space*cable_coef;
+  //   Eigen::VectorXd FM_each = G_inv*FM + space*cable_coef;
     
-    //feasibility
-    Eigen::VectorXd cost_feasibility(13), grad_feasibility(6); 
-    opt->addFeasibilityForCable(FM_each, grad_feasibility, cost_feasibility);
-    //collision
-    Eigen::VectorXd cost_collision(4), grad_collision(6);
-    opt->addCollisionForCable(FM_each, grad_collision, cost_collision);
-    //swarm
-    Eigen::VectorXd cost_swarm(6), grad_swarm(6);
-    opt->addSwarmForCable(FM_each, grad_swarm, cost_swarm);
+  //   //feasibility
+  //   Eigen::VectorXd cost_feasibility(13), grad_feasibility(6); 
+  //   opt->addFeasibilityForCable(FM_each, grad_feasibility, cost_feasibility);
+  //   //collision
+  //   Eigen::VectorXd cost_collision(4), grad_collision(6);
+  //   opt->addCollisionForCable(FM_each, grad_collision, cost_collision);
+  //   //swarm
+  //   Eigen::VectorXd cost_swarm(6), grad_swarm(6);
+  //   opt->addSwarmForCable(FM_each, grad_swarm, cost_swarm);
 
-    grad_cable_coef = grad_feasibility + grad_collision + grad_swarm;
-    return cost_feasibility.sum() + cost_collision.sum() + cost_swarm.sum();
-  }
+  //   grad_cable_coef = grad_feasibility + grad_collision + grad_swarm;
+  //   return cost_feasibility.sum() + cost_collision.sum() + cost_swarm.sum();
+  // }
 
-  int PolyTrajOptimizer::earlyExitCallback_forCable(void *func_data, const double *x, const double *g, const double fx, const double xnorm, const double gnorm, const double step, int n, int k, int ls)
-  {
-    PolyTrajOptimizer *opt = reinterpret_cast<PolyTrajOptimizer *>(func_data);
-    return (opt->force_stop_type_ == STOP_FOR_ERROR || opt->force_stop_type_ == STOP_FOR_REBOUND);
-  }
+  // int PolyTrajOptimizer::earlyExitCallback_forCable(void *func_data, const double *x, const double *g, const double fx, const double xnorm, const double gnorm, const double step, int n, int k, int ls)
+  // {
+  //   PolyTrajOptimizer *opt = reinterpret_cast<PolyTrajOptimizer *>(func_data);
+  //   return (opt->force_stop_type_ == STOP_FOR_ERROR || opt->force_stop_type_ == STOP_FOR_REBOUND);
+  // }
 
-  void PolyTrajOptimizer::addSwarmForCable(Eigen::MatrixXd FMeach, Eigen::VectorXd &grad, Eigen::VectorXd &cost)
-  {
-    cost.setZero();
-    grad.setZero();
+  // void PolyTrajOptimizer::addSwarmForCable(Eigen::MatrixXd FMeach, Eigen::VectorXd &grad, Eigen::VectorXd &cost)
+  // {
+  //   cost.setZero();
+  //   grad.setZero();
     
-    Eigen::MatrixXd space = cable_load_->G_null_space;
+  //   Eigen::MatrixXd space = cable_load_->G_null_space;
     
-    int index = 0;
-    for (size_t i = 0; i < 4; i++)
-    {
-      Eigen::Vector3d FMi = FMeach.block<3,1>(3*i,0);
-      Eigen::Vector3d qi = FMi / FMi.norm();
-      Eigen::Vector3d uav_position_i = points_positions[i] + cable_length_ * qi;
-      Eigen::MatrixXd Gi = space.block<3,6>(3*i,0);
-      for (size_t j = i+1; j < 4; j++)
-      {
-        Eigen::Vector3d FMj = FMeach.block<3,1>(3*j,0);
-        Eigen::Vector3d qj = FMj / FMj.norm();
-        Eigen::Vector3d uav_position_j = points_positions[j] + cable_length_ * qj;
-        Eigen::MatrixXd Gj = space.block<3,6>(3*j,0);
+  //   int index = 0;
+  //   for (size_t i = 0; i < 4; i++)
+  //   {
+  //     Eigen::Vector3d FMi = FMeach.block<3,1>(3*i,0);
+  //     Eigen::Vector3d qi = FMi / FMi.norm();
+  //     Eigen::Vector3d uav_position_i = points_positions[i] + cable_length_ * qi;
+  //     Eigen::MatrixXd Gi = space.block<3,6>(3*i,0);
+  //     for (size_t j = i+1; j < 4; j++)
+  //     {
+  //       Eigen::Vector3d FMj = FMeach.block<3,1>(3*j,0);
+  //       Eigen::Vector3d qj = FMj / FMj.norm();
+  //       Eigen::Vector3d uav_position_j = points_positions[j] + cable_length_ * qj;
+  //       Eigen::MatrixXd Gj = space.block<3,6>(3*j,0);
         
-        Eigen::Vector3d dist_vector = uav_position_j - uav_position_i;
-        double dist = dist_vector.norm();
-        double dist_err = pow(uav_swarm_clearance_,2) - pow(dist,2);
-        if (dist_err > 0)
-        {
-          cost(index) = weight_uav_swarm_ * pow(dist_err,3);
+  //       Eigen::Vector3d dist_vector = uav_position_j - uav_position_i;
+  //       double dist = dist_vector.norm();
+  //       double dist_err = pow(uav_swarm_clearance_,2) - pow(dist,2);
+  //       if (dist_err > 0)
+  //       {
+  //         cost(index) = weight_uav_swarm_ * pow(dist_err,3);
           
-          grad += weight_uav_swarm_ * pow(dist_err, 2) * ( Gj.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qj*qj.transpose()) / FMj.norm()).transpose() - Gi.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qi*qi.transpose()) / FMi.norm()).transpose() ) * (-2) * dist_vector;
-        }
-        index++;
-      }
-    }
-  }
+  //         grad += weight_uav_swarm_ * pow(dist_err, 2) * ( Gj.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qj*qj.transpose()) / FMj.norm()).transpose() - Gi.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qi*qi.transpose()) / FMi.norm()).transpose() ) * (-2) * dist_vector;
+  //       }
+  //       index++;
+  //     }
+  //   }
+  // }
 
-  void PolyTrajOptimizer::addCollisionForCable(Eigen::MatrixXd FMeach, Eigen::VectorXd &grad, Eigen::VectorXd &cost)
-  {
-    cost.setZero(); 
-    grad.setZero();
+  // void PolyTrajOptimizer::addCollisionForCable(Eigen::MatrixXd FMeach, Eigen::VectorXd &grad, Eigen::VectorXd &cost)
+  // {
+  //   cost.setZero(); 
+  //   grad.setZero();
 
-    Eigen::MatrixXd space = cable_load_->G_null_space;
+  //   Eigen::MatrixXd space = cable_load_->G_null_space;
     
-    double dist, dist_err;
-    for (size_t i = 0; i < 4; i++)
-    {
-      Eigen::Vector3d FMi = FMeach.block<3,1>(3*i,0);
-      Eigen::Vector3d qi = FMi / FMi.norm();
-      Eigen::Vector3d uav_position = points_positions[i] + cable_length_ * qi;
-      grid_map_->evaluateEDT(uav_position, dist);
-      dist_err = uav_obs_clearance_ - dist;
-      if(dist_err>0)
-      {
-        cost(i) = weight_uav_obs_ * pow(dist_err,3);
+  //   double dist, dist_err;
+  //   for (size_t i = 0; i < 4; i++)
+  //   {
+  //     Eigen::Vector3d FMi = FMeach.block<3,1>(3*i,0);
+  //     Eigen::Vector3d qi = FMi / FMi.norm();
+  //     Eigen::Vector3d uav_position = points_positions[i] + cable_length_ * qi;
+  //     grid_map_->evaluateEDT(uav_position, dist);
+  //     dist_err = uav_obs_clearance_ - dist;
+  //     if(dist_err>0)
+  //     {
+  //       cost(i) = weight_uav_obs_ * pow(dist_err,3);
   
-        Eigen::Vector3d dist_grad;
-        grid_map_->evaluateFirstGrad(uav_position, dist_grad);
-        Eigen::MatrixXd Gi = space.block<3,6>(3*i,0);
-        grad += weight_uav_obs_ * 3 * pow(dist_err,2) * (-1) * Gi.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qi*qi.transpose()) / FMi.norm()).transpose() * dist_grad;
-      }
-    }
-  }
+  //       Eigen::Vector3d dist_grad;
+  //       grid_map_->evaluateFirstGrad(uav_position, dist_grad);
+  //       Eigen::MatrixXd Gi = space.block<3,6>(3*i,0);
+  //       grad += weight_uav_obs_ * 3 * pow(dist_err,2) * (-1) * Gi.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qi*qi.transpose()) / FMi.norm()).transpose() * dist_grad;
+  //     }
+  //   }
+  // }
 
-  void PolyTrajOptimizer::addFeasibilityForCable(Eigen::MatrixXd FMeach, Eigen::VectorXd &grad, Eigen::VectorXd &cost)
-  {
-    cost.setZero(); 
-    grad.setZero();
+  // void PolyTrajOptimizer::addFeasibilityForCable(Eigen::MatrixXd FMeach, Eigen::VectorXd &grad, Eigen::VectorXd &cost)
+  // {
+  //   cost.setZero(); 
+  //   grad.setZero();
 
-    Eigen::MatrixXd space = cable_load_->G_null_space;
+  //   Eigen::MatrixXd space = cable_load_->G_null_space;
 
-    // FMeach(0) < 0, FMeach(1) < 0, FMeach(2) < 0
-    if(FMeach(0) >= 0)
-    {
-      cost(0) = pow(FMeach(0),2);
-      grad += 2 * FMeach(0) * space.row(0).transpose();
-    }
-    if(FMeach(1) >= 0)
-    {
-      cost(1) = pow(FMeach(1),2);
-      grad += 2 * FMeach(1) * space.row(1).transpose();
-    }
-    if(FMeach(2) >= 0)
-    {
-      cost(2) = pow(FMeach(2),2);
-      grad += 2 * FMeach(2) * space.row(2).transpose();
-    }
+  //   // FMeach(0) < 0, FMeach(1) < 0, FMeach(2) < 0
+  //   if(FMeach(0) >= 0)
+  //   {
+  //     cost(0) = pow(FMeach(0),2);
+  //     grad += 2 * FMeach(0) * space.row(0).transpose();
+  //   }
+  //   if(FMeach(1) >= 0)
+  //   {
+  //     cost(1) = pow(FMeach(1),2);
+  //     grad += 2 * FMeach(1) * space.row(1).transpose();
+  //   }
+  //   if(FMeach(2) >= 0)
+  //   {
+  //     cost(2) = pow(FMeach(2),2);
+  //     grad += 2 * FMeach(2) * space.row(2).transpose();
+  //   }
 
-    // FMeach(3) < 0, FMeach(4) > 0, FMeach(5) < 0
-    if(FMeach(3) >= 0)
-    {
-      cost(3) = pow(FMeach(3),2);
-      grad += 2 * FMeach(3) * space.row(3).transpose();
-    }
-    if(FMeach(4) <= 0)
-    {
-      cost(4) = pow(FMeach(4),2);
-      grad += 2 * FMeach(4) * space.row(4).transpose();
-    }
-    if(FMeach(5) >= 0)
-    {
-      cost(5) = pow(FMeach(5),2);
-      grad += 2 * FMeach(5) * space.row(5).transpose();
-    }
+  //   // FMeach(3) < 0, FMeach(4) > 0, FMeach(5) < 0
+  //   if(FMeach(3) >= 0)
+  //   {
+  //     cost(3) = pow(FMeach(3),2);
+  //     grad += 2 * FMeach(3) * space.row(3).transpose();
+  //   }
+  //   if(FMeach(4) <= 0)
+  //   {
+  //     cost(4) = pow(FMeach(4),2);
+  //     grad += 2 * FMeach(4) * space.row(4).transpose();
+  //   }
+  //   if(FMeach(5) >= 0)
+  //   {
+  //     cost(5) = pow(FMeach(5),2);
+  //     grad += 2 * FMeach(5) * space.row(5).transpose();
+  //   }
 
-    // FMeach(6) > 0, FMeach(7) > 0, FMeach(8) < 0
-    if(FMeach(6) <= 0)
-    {
-      cost(6) = pow(FMeach(6),2);
-      grad += 2 * FMeach(6) * space.row(6).transpose();
-    }
-    if(FMeach(7) <= 0)
-    {
-      cost(7) = pow(FMeach(7),2);
-      grad += 2 * FMeach(7) * space.row(7).transpose();
-    }
-    if(FMeach(8) >= 0)
-    {
-      cost(8) = pow(FMeach(8),2);
-      grad += 2 * FMeach(8) * space.row(8).transpose();
-    }
+  //   // FMeach(6) > 0, FMeach(7) > 0, FMeach(8) < 0
+  //   if(FMeach(6) <= 0)
+  //   {
+  //     cost(6) = pow(FMeach(6),2);
+  //     grad += 2 * FMeach(6) * space.row(6).transpose();
+  //   }
+  //   if(FMeach(7) <= 0)
+  //   {
+  //     cost(7) = pow(FMeach(7),2);
+  //     grad += 2 * FMeach(7) * space.row(7).transpose();
+  //   }
+  //   if(FMeach(8) >= 0)
+  //   {
+  //     cost(8) = pow(FMeach(8),2);
+  //     grad += 2 * FMeach(8) * space.row(8).transpose();
+  //   }
 
-    // FMeach(9) > 0, FMeach(10) < 0, FMeach(11) < 0
-    if(FMeach(9) <= 0)
-    {
-      cost(9) = pow(FMeach(9),2);
-      grad += 2 * FMeach(9) * space.row(9).transpose();
-    }
-    if(FMeach(10) >= 0)
-    {
-      cost(10) = pow(FMeach(10),2);
-      grad += 2 * FMeach(10) * space.row(10).transpose();
-    }
-    if(FMeach(11) >= 0)
-    {
-      cost(11) = pow(FMeach(11),2);
-      grad += 2 * FMeach(11) * space.row(11).transpose();
-    }
+  //   // FMeach(9) > 0, FMeach(10) < 0, FMeach(11) < 0
+  //   if(FMeach(9) <= 0)
+  //   {
+  //     cost(9) = pow(FMeach(9),2);
+  //     grad += 2 * FMeach(9) * space.row(9).transpose();
+  //   }
+  //   if(FMeach(10) >= 0)
+  //   {
+  //     cost(10) = pow(FMeach(10),2);
+  //     grad += 2 * FMeach(10) * space.row(10).transpose();
+  //   }
+  //   if(FMeach(11) >= 0)
+  //   {
+  //     cost(11) = pow(FMeach(11),2);
+  //     grad += 2 * FMeach(11) * space.row(11).transpose();
+  //   }
 
-    // minimum sum of FMeach
-    cost(12) = pow(FMeach.norm(),2);
-    grad += 2 * space.transpose() * FMeach;
+  //   // minimum sum of FMeach
+  //   cost(12) = pow(FMeach.norm(),2);
+  //   grad += 2 * space.transpose() * FMeach;
 
-    cost = cost * weight_FM_feasibility_;  //乘上系数
-    grad = grad * weight_FM_feasibility_;
-  }
+  //   cost = cost * weight_FM_feasibility_;  //乘上系数
+  //   grad = grad * weight_FM_feasibility_;
+  // }
 
   /* callbacks by the L-BFGS optimizer */
   double PolyTrajOptimizer::costFunctionCallback_forLoad(void *func_data, const double *x, double *grad, const int n)

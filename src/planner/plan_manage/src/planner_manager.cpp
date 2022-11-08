@@ -273,11 +273,11 @@ namespace ego_planner
     return true;
   }
 
-  bool EGOPlannerManager::ReboundReplanForCable(Eigen::MatrixXd accs, Eigen::MatrixXd positions, Eigen::VectorXd durations)
-  {
-    bool opt_success = ploy_traj_opt_->OptimizeTrajectory_lbfgs_forCable0(accs, positions, durations);
-    return opt_success;
-  }
+  // bool EGOPlannerManager::ReboundReplanForCable(Eigen::MatrixXd accs, Eigen::MatrixXd positions, Eigen::VectorXd durations)
+  // {
+  //   bool opt_success = ploy_traj_opt_->OptimizeTrajectory_lbfgs_forCable0(accs, positions, durations);
+  //   return opt_success;
+  // }
 
   bool EGOPlannerManager::EmergencyStop(Eigen::Vector3d stop_pos)
   {
