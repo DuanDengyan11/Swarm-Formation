@@ -177,7 +177,6 @@ namespace ego_planner
 
     have_odom_ = true;
 
-    ROS_INFO("have odom");
   }
 
   void EGOReplanFSM::polyTraj2ROSMsg(traj_utils::PolyTraj &msg)
@@ -332,15 +331,15 @@ namespace ego_planner
       have_local_traj_ = true;
     }
 
-    //for cables
-    if (plan_success)
-    {
-      bool cable_success = callReboundReplanForCable(have_local_traj_cable_);
-      if (cable_success)
-      {
-        have_local_traj_cable_ = true;
-      }
-    }
+    // //for cables
+    // if (plan_success)
+    // {
+    //   bool cable_success = callReboundReplanForCable(have_local_traj_cable_);
+    //   if (cable_success)
+    //   {
+    //     have_local_traj_cable_ = true;
+    //   }
+    // }
 
     return plan_success;
   }
