@@ -29,7 +29,7 @@ namespace ego_planner
     /* initialize main modules */
     visualization_.reset(new PlanningVisualization(nh));
     planner_manager_.reset(new EGOPlannerManager);
-    planner_manager_->initPlanModules(nh, visualization_);
+    // planner_manager_->initPlanModules(nh, visualization_);
     // planner_manager_->deliverTrajToOptimizer(); // store trajectories
     // planner_manager_->setDroneIdtoOpt();
 
