@@ -1,6 +1,6 @@
 # rectangle formation yaml
 # global goal setting
-global_goal:
+# global_goal:
   # swarm_central_pos: {x: 25.0, y: 0.0, z: 1.0}
   # cable_length : 2.0
   # m_load : 2.0
