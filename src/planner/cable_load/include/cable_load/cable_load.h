@@ -21,5 +21,4 @@ public:
 
     Eigen::Matrix3d cal_skew_matrix(Eigen::Vector3d x);
 
-    typedef std::shared_ptr<cable_load> Ptr;
 };
