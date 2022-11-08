@@ -9,11 +9,11 @@ void cable_load::init(ros::NodeHandle &nh)
 
     double half_length = length_/2.0, half_width = width_/2.0, half_height = height_/2.0;
 
-    std::vector<Eigen::Vector3d> cable_points;
-    cable_points.push_back({-half_length, -half_width, -half_height});
-    cable_points.push_back({-half_length, half_width, -half_height});
-    cable_points.push_back({half_length, half_width, -half_height});
-    cable_points.push_back({half_length, -half_width, -half_height});
+    // std::vector<Eigen::Vector3d> cable_points;
+    // cable_points.push_back({-half_length, -half_width, -half_height});
+    // cable_points.push_back({-half_length, half_width, -half_height});
+    // cable_points.push_back({half_length, half_width, -half_height});
+    // cable_points.push_back({half_length, -half_width, -half_height});
 
     // Eigen::Matrix<double, 6, 12> G;
     // for (size_t i = 0; i < cable_points.size(); i++)
