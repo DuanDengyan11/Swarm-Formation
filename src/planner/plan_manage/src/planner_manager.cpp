@@ -36,7 +36,7 @@ namespace ego_planner
 
     ploy_traj_opt_.reset(new PolyTrajOptimizer);
     ploy_traj_opt_->setParam(nh);
-    // ploy_traj_opt_->setEnvironment(grid_map_, cable_load_);
+    ploy_traj_opt_->setEnvironment(grid_map_, cable_load_);
 
     visualization_ = vis;
 
@@ -274,11 +274,11 @@ namespace ego_planner
     return true;
   }
 
-  // bool EGOPlannerManager::ReboundReplanForCable(Eigen::MatrixXd accs, Eigen::MatrixXd positions, Eigen::VectorXd durations)
-  // {
-  //   bool opt_success = ploy_traj_opt_->OptimizeTrajectory_lbfgs_forCable0(accs, positions, durations);
-  //   return opt_success;
-  // }
+  bool EGOPlannerManager::ReboundReplanForCable(Eigen::MatrixXd accs, Eigen::MatrixXd positions, Eigen::VectorXd durations)
+  {
+    bool opt_success = ploy_traj_opt_->OptimizeTrajectory_lbfgs_forCable0(accs, positions, durations);
+    return opt_success;
+  }
 
   bool EGOPlannerManager::EmergencyStop(Eigen::Vector3d stop_pos)
   {
