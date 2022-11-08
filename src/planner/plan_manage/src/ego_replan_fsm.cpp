@@ -350,8 +350,8 @@ namespace ego_planner
     LocalTrajData *info = &planner_manager_->traj_.local_traj;
 
     Eigen::MatrixXd accs = info->traj.getAccs();
-    Eigen::MatrixXd positions = info->traj.getPositions();
-    Eigen::VectorXd durations = info->traj.getDurations();
+    // Eigen::MatrixXd positions = info->traj.getPositions();
+    // Eigen::VectorXd durations = info->traj.getDurations();
     
     //先装作无人机姿态角不变， 其实可以通过微分平坦算出来
 
