@@ -38,7 +38,7 @@ namespace ego_planner
   private:
     GridMap::Ptr grid_map_;
 
-    cable_load cable_load_;
+    cable_load::Ptr cable_load_;
     
     AStar::Ptr a_star_;
     poly_traj::MinJerkOpt jerkOpt_;

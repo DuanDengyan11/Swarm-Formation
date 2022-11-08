@@ -69,7 +69,7 @@ namespace ego_planner
     TrajContainer traj_;
     TrajContainer traj_cable_coef_;
     
-    cable_load cable_load_;
+    cable_load::Ptr cable_load_;
 
     // ros::Publisher obj_pub_; //zx-todo
 
