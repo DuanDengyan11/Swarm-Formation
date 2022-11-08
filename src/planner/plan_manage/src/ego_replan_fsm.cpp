@@ -26,10 +26,10 @@ namespace ego_planner
     nh.param("fsm/result_file", result_fn_, string("/home/zuzu/Documents/Benchmark/21-RSS-ego-swarm/2.24/ego/ego_swarm.txt")); // 保存结果文件的地方
     nh.param("fsm/replan_trajectory_time", replan_trajectory_time_, 0.0); // = 0.1s 重新规划算法的时间
 
-    // /* initialize main modules */
-    // visualization_.reset(new PlanningVisualization(nh));
-    // planner_manager_.reset(new EGOPlannerManager);
-    // planner_manager_->initPlanModules(nh, visualization_);
+    /* initialize main modules */
+    visualization_.reset(new PlanningVisualization(nh));
+    planner_manager_.reset(new EGOPlannerManager);
+    planner_manager_->initPlanModules(nh, visualization_);
     // planner_manager_->deliverTrajToOptimizer(); // store trajectories
     // planner_manager_->setDroneIdtoOpt();
 
