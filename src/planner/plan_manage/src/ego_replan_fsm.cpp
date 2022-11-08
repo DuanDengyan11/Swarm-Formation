@@ -14,28 +14,17 @@ namespace ego_planner
  
     have_target_ = false; //是否接收到目标位置点
     have_odom_ = false;  //是否有里程计数据
-    have_local_traj_ = false; // 有没有上次规划好的local轨迹
+    have_local_traj_ = false; // 有没有上次规划好的local load轨迹
+    have_local_traj_cable_ = false; //有没有上次规划好的local cable轨迹
+    flag_relan_astar_ = true; //是否需要重新astar规划
 
     /*  fsm param  */
     nh.param("fsm/thresh_replan_time", replan_thresh_, -1.0);  // = 1s
     nh.param("fsm/thresh_no_replan_meter", no_replan_thresh_, -1.0); // = 1m
-    nh.param("fsm/planning_horizon", planning_horizen_, -1.0); // = 7.5m
-    nh.param("fsm/planning_horizen_time", planning_horizen_time_, -1.0); // = 3s
-    nh.param("fsm/realworld_experiment", flag_realworld_experiment_, false); // = false
+    nh.param("fsm/planning_horizon", planning_horizen_, -1.0); // = 7.5m 预测距离
+    nh.param("fsm/planning_horizen_time", planning_horizen_time_, -1.0); // = 3s 预测时间
     nh.param("fsm/result_file", result_fn_, string("/home/zuzu/Documents/Benchmark/21-RSS-ego-swarm/2.24/ego/ego_swarm.txt")); // 保存结果文件的地方
-    nh.param("fsm/replan_trajectory_time", replan_trajectory_time_, 0.0); // = 0.1s
-
-    have_trigger_ = !flag_realworld_experiment_;  // = true
-
-    nh.param("global_goal/cable_length", cable_length_, 1.0);
-    nh.param("global_goal/m_load", m_load_, 1.0);
-
-    for (int i = 0; i < 7; i++)
-    {
-      nh.param("global_goal/Fcable_" + to_string(i) + "/x", Fcable_[i][1], 2.0);
-      nh.param("global_goal/Fcable_" + to_string(i) + "/y", Fcable_[i][2], 45.0);
-      nh.param("global_goal/Fcable_" + to_string(i) + "/z", Fcable_[i][3], 0.0);
-    } //相对目标点的位置
+    nh.param("fsm/replan_trajectory_time", replan_trajectory_time_, 0.0); // = 0.1s 重新规划算法的时间
 
     /* initialize main modules */
     visualization_.reset(new PlanningVisualization(nh));
@@ -43,7 +32,6 @@ namespace ego_planner
     planner_manager_->initPlanModules(nh, visualization_);
     planner_manager_->deliverTrajToOptimizer(); // store trajectories
     planner_manager_->setDroneIdtoOpt();
-    planner_manager_->initCableLoad(nh);
 
     /* callback */
     exec_timer_ = nh.createTimer(ros::Duration(0.01), &EGOReplanFSM::execFSMCallback, this); //主程序 先优化吊挂物轨迹 然后优化上面的绳索
@@ -101,7 +89,6 @@ namespace ego_planner
         ROS_ERROR("Failed to generate the first trajectory!!!");
         changeFSMExecState(SEQUENTIAL_START, "FSM");
       }
-
       break;
     }
 
@@ -113,7 +100,7 @@ namespace ego_planner
       else
         success = planFromLocalTraj(false);
 
-      if (success)
+      if (success) //若成功，就不需要重新astar计算了
       {
         flag_relan_astar_ = false;
         changeFSMExecState(EXEC_TRAJ, "FSM");
@@ -330,7 +317,7 @@ namespace ego_planner
     bool plan_success = planner_manager_->reboundReplanForLoad(
         desired_start_pt, desired_start_vel, desired_start_acc,
         desired_start_time, local_target_pt_, local_target_vel_,
-        (have_new_target_ || flag_use_poly_init),
+        (have_new_target_ || flag_use_poly_init),  //若have_new_target = true 或上一次 计算local_traj 失败, 这时需要重新用Astar算法初始化
         have_local_traj_);
 
     have_new_target_ = false;
@@ -343,6 +330,36 @@ namespace ego_planner
       have_local_traj_ = true;
     }
 
+    //for cables
+    if (plan_success)
+    {
+      bool cable_success = callReboundReplanForCable(have_local_traj_cable_);
+      if (cable_success)
+      {
+        have_local_traj_cable_ = true;
+      }
+    }
+
+    return plan_success;
+  }
+
+  bool EGOReplanFSM::callReboundReplanForCable(bool have_local)
+  {
+    bool cable_success = false;
+    LocalTrajData *info = &planner_manager_->traj_.local_traj;
+
+    Eigen::MatrixXd accs = info->traj.getAccs();
+    Eigen::MatrixXd positions = info->traj.getPositions();
+    Eigen::VectorXd durations = info->traj.getDurations();
+    
+    //先装作无人机姿态角不变， 其实可以通过微分平坦算出来
+
+    bool plan_success = ReboundReplanForCable(accs, positions, durations);
+
+    if (plan_success)
+    {
+      //不确定是否需要将规划成功的轨迹 发布出去
+    }
     return plan_success;
   }
 

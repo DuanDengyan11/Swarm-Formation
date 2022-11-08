@@ -11,6 +11,7 @@
 #include "poly_traj_utils.hpp"
 #include "munkres_algorithm.hpp"
 #include <fstream>
+#include <cable_load/cable_load.h>
 
 namespace ego_planner
 {
@@ -36,6 +37,9 @@ namespace ego_planner
   
   private:
     GridMap::Ptr grid_map_;
+
+    cable_load cable_load_;
+    
     AStar::Ptr a_star_;
     poly_traj::MinJerkOpt jerkOpt_;
     SwarmTrajData *swarm_trajs_{NULL}; // Can not use shared_ptr and no need to free
@@ -47,6 +51,9 @@ namespace ego_planner
     int piece_num_;        // poly traj piece numbers
     int iter_num_;         // iteration of the solver
     double min_ellip_dist2_; // min trajectory distance in swarm
+
+    std::vector<Eigen::Vector3d> points_positions;
+    Eigen::Matrix<double, 6, 1> FM;
 
     string result_fn_;
     fstream result_file_;
@@ -66,8 +73,6 @@ namespace ego_planner
     double wei_feas_;                        // feasibility weight
     double wei_sqrvar_;                      // squared variance weight
     double wei_time_;                        // time weight
-    double cable_length_;                    // cable length 
-    int cable_num_;
     double weight_cable_length_;
     double weight_cable_colli_;
     double cable_tolerance_;
@@ -82,6 +87,10 @@ namespace ego_planner
 
     double t_now_;
 
+    double cable_length_, load_mass_;
+    double uav_obs_clearance_, uav_swarm_clearance_;
+    double weight_uav_obs_, weight_uav_swarm_, weight_FM_feasibility_;
+
 
   public:
 
@@ -90,7 +99,7 @@ namespace ego_planner
 
     /* set variables */
     void setParam(ros::NodeHandle &nh);
-    void setEnvironment(const GridMap::Ptr &map);
+    void setEnvironment(const GridMap::Ptr &map, const cable_load cable_load);
     void setControlPoints(const Eigen::MatrixXd &points);
     void setSwarmTrajs(SwarmTrajData *swarm_trajs_ptr);
     void setDroneId(const int drone_id);
@@ -107,6 +116,9 @@ namespace ego_planner
     bool OptimizeTrajectory_lbfgs_forLoad(const Eigen::MatrixXd &iniState, const Eigen::MatrixXd &finState,
                             const Eigen::MatrixXd &initInnerPts, const Eigen::VectorXd &initT,
                             Eigen::MatrixXd &optimal_points);
+                  
+    bool OptimizeTrajectory_lbfgs_forCable0(Eigen::MatrixXd accs, Eigen::MatrixXd positions, Eigen::VectorXd durations);
+    bool OptimizeTrajectory_lbfgs_forCable(Eigen::Vector3d acc, Eigen::Vector3d position, Eigen::MatrixXd cable_coef);
                                             
     void astarWithMinTraj( const Eigen::MatrixXd &iniState, 
                            const Eigen::MatrixXd &finState,
@@ -119,6 +131,13 @@ namespace ego_planner
   private:
     /* callbacks by the L-BFGS optimizer */
     static double costFunctionCallback_forLoad(void *func_data, const double *x, double *grad, const int n);
+    static double costFunctionCallback_forCable(void *func_data, const double *x, double *grad, const int n);
+
+    void addFeasibilityForCable(Eigen::MatrixXd FMeach, Eigen::VectorXd &grad, Eigen::VectorXd &cost);
+    void addCollisionForCable(Eigen::MatrixXd FMeach, Eigen::VectorXd &grad, Eigen::VectorXd &cost);
+    void addSwarmForCable(Eigen::MatrixXd FMeach, Eigen::VectorXd &grad, Eigen::VectorXd &cost);
+    
+    static int earlyExitCallback_forCable(void *func_data, const double *x, const double *g, const double fx, const double xnorm, const double gnorm, const double step, int n, int k, int ls);
 
     static int earlyExitCallback(void *func_data, const double *x, const double *g,
                                  const double fx, const double xnorm, const double gnorm,

@@ -76,6 +76,52 @@ namespace ego_planner
       return true;
   }
 
+  bool PolyTrajOptimizer::OptimizeTrajectory_lbfgs_forCable0(Eigen::MatrixXd accs, Eigen::MatrixXd positions, Eigen::VectorXd durations)
+  { 
+    double cable_coef[6];
+    for (size_t i = 0; i < accs.size(); i++)
+    {
+      OptimizeTrajectory_lbfgs_forCable(accs.col(i), positions.col(i), cable_coef);
+    }
+
+    //上面的函数输出 cable_coefs 与 durations 一起，基于 minco 生成一组轨迹
+
+  }
+
+  bool PolyTrajOptimizer::OptimizeTrajectory_lbfgs_forCable(Eigen::Vector3d acc, Eigen::Vector3d position, double cable_coef[6])
+  {
+    //calculate the position of cable points
+    for (size_t i = 0; i < 4; i++)
+    {
+      Eigen::Vector3d point_position = position + cable_load_.cable_points[i];
+      points_positions.push_back(point_position);
+    }
+
+    FM << load_mass_ * acc, 0.0, 0.0, 0.0;
+
+    double final_cost;
+
+    lbfgs::lbfgs_parameter_t lbfgs_params;
+    lbfgs::lbfgs_load_default_parameters(&lbfgs_params);
+    lbfgs_params.mem_size = 16;
+    lbfgs_params.g_epsilon = 0.1;
+    lbfgs_params.min_step = 1e-32;
+    lbfgs_params.max_iterations = 60; // 200
+
+    int result = lbfgs::lbfgs_optimize(
+        6,
+        cable_coef,
+        &final_cost,
+        PolyTrajOptimizer::costFunctionCallback_forCable,
+        NULL,
+        PolyTrajOptimizer::earlyExitCallback_forCable,
+        this,
+        &lbfgs_params);
+
+    return true;
+
+  }
+
   bool PolyTrajOptimizer::checkCollision(void)
   {
     /* check the safety of trajectory */
@@ -107,6 +153,183 @@ namespace ego_planner
     return occ;
   }
 
+  double PolyTrajOptimizer::costFunctionCallback_forCable(void *func_data, const double *x, double *grad, const int n)
+  {
+    PolyTrajOptimizer *opt = reinterpret_cast<PolyTrajOptimizer *>(func_data);
+    Eigen::Map<const Eigen::VectorXd> cable_coef(x, 6);
+    Eigen::Map<Eigen::VectorXd> grad_cable_coef(grad, 6);
+
+    Eigen::MatrixXd space = opt->cable_load_.G_null_space;
+    Eigen::Matrix<double, 12, 6> G_inv = opt->cable_load_.G_inv;
+    Eigen::Matrix<double, 6, 1> FM = opt->FM;
+
+    Eigen::VectorXd FM_each = G_inv*FM + space*cable_coef;
+    
+    //feasibility
+    Eigen::VectorXd cost_feasibility(13), grad_feasibility(6); 
+    opt->addFeasibilityForCable(FM_each, grad_feasibility, cost_feasibility);
+    //collision
+    Eigen::VectorXd cost_collision(4), grad_collision(6);
+    opt->addCollisionForCable(FM_each, grad_collision, cost_collision);
+    //swarm
+    Eigen::VectorXd cost_swarm(6), grad_swarm(6);
+    opt->addSwarmForCable(FM_each, grad_swarm, cost_swarm);
+
+    grad_cable_coef = grad_feasibility + grad_collision + grad_swarm;
+    return cost_feasibility.sum() + cost_collision.sum() + cost_swarm.sum();
+  }
+
+  int PolyTrajOptimizer::earlyExitCallback_forCable(void *func_data, const double *x, const double *g, const double fx, const double xnorm, const double gnorm, const double step, int n, int k, int ls)
+  {
+    PolyTrajOptimizer *opt = reinterpret_cast<PolyTrajOptimizer *>(func_data);
+    return (opt->force_stop_type_ == STOP_FOR_ERROR || opt->force_stop_type_ == STOP_FOR_REBOUND);
+  }
+
+  void PolyTrajOptimizer::addSwarmForCable(Eigen::MatrixXd FMeach, Eigen::VectorXd &grad, Eigen::VectorXd &cost)
+  {
+    cost.setZero();
+    grad.setZero();
+    
+    Eigen::MatrixXd space = cable_load_.G_null_space;
+    
+    int index = 0;
+    for (size_t i = 0; i < 4; i++)
+    {
+      Eigen::Vector3d FMi = FMeach.block<3,1>(3*i,0);
+      Eigen::Vector3d qi = FMi / FMi.norm();
+      Eigen::Vector3d uav_position_i = points_positions[i] + cable_length_ * qi;
+      Eigen::MatrixXd Gi = space.block<3,6>(3*i,0);
+      for (size_t j = i+1; j < 4; j++)
+      {
+        Eigen::Vector3d FMj = FMeach.block<3,1>(3*j,0);
+        Eigen::Vector3d qj = FMj / FMj.norm();
+        Eigen::Vector3d uav_position_j = points_positions[j] + cable_length_ * qj;
+        Eigen::MatrixXd Gj = space.block<3,6>(3*j,0);
+        
+        Eigen::Vector3d dist_vector = uav_position_j - uav_position_i;
+        double dist = dist_vector.norm();
+        double dist_err = pow(uav_swarm_clearance_,2) - pow(dist,2);
+        if (dist_err > 0)
+        {
+          cost(index) = weight_uav_swarm_ * pow(dist_err,3);
+          
+          grad += weight_uav_swarm_ * 3*dist_err^2 * ( Gj.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qj*qj.transpose()) / FMj.norm()).transpose() - Gi.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qi*qi.transpose()) / FMi.norm()).transpose() ) * (-2) * dist_vector;
+        }
+        index++;
+      }
+    }
+  }
+
+  void PolyTrajOptimizer::addCollisionForCable(Eigen::MatrixXd FMeach, Eigen::VectorXd &grad, Eigen::VectorXd &cost)
+  {
+    cost.setZero(); 
+    grad.setZero();
+
+    Eigen::MatrixXd space = cable_load_.G_null_space;
+    
+    double dist, dist_err;
+    for (size_t i = 0; i < 4; i++)
+    {
+      Eigen::Vector3d FMi = FMeach.block<3,1>(3*i,0);
+      Eigen::Vector3d qi = FMi / FMi.norm();
+      Eigen::Vector3d uav_position = points_positions[i] + cable_length_ * qi;
+      grid_map_->evaluateEDT(uav_position, dist);
+      dist_err = uav_obs_clearance_ - dist;
+      if(dist_err>0)
+      {
+        cost(i) = weight_uav_obs_ * pow(dist_err,3);
+  
+        Eigen::Vector3d dist_grad;
+        grid_map_->evaluateFirstGrad(uav_position, dist_grad);
+        Eigen::MatrixXd Gi = space.block<3,6>(3*i,0);
+        grad += weight_uav_obs_ * 3 * pow(dist_err,2) * (-1) * Gi.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qi*qi.transpose()) / FMi.norm()).transpose() * dist_grad;
+      }
+    }
+  }
+
+  void PolyTrajOptimizer::addFeasibilityForCable(Eigen::MatrixXd FMeach, Eigen::VectorXd &grad, Eigen::VectorXd &cost)
+  {
+    cost.setZero(); 
+    grad.setZero();
+
+    Eigen::MatrixXd space = cable_load_.G_null_space;
+
+    // FMeach(0) < 0, FMeach(1) < 0, FMeach(2) < 0
+    if(FMeach(0) >= 0)
+    {
+      cost(0) = pow(FMeach(0),2);
+      grad += 2 * FMeach(0) * space.row(0).transpose();
+    }
+    if(FMeach(1) >= 0)
+    {
+      cost(1) = pow(FMeach(1),2);
+      grad += 2 * FMeach(1) * space.row(1).transpose();
+    }
+    if(FMeach(2) >= 0)
+    {
+      cost(2) = pow(FMeach(2),2);
+      grad += 2 * FMeach(2) * space.row(2).transpose();
+    }
+
+    // FMeach(3) < 0, FMeach(4) > 0, FMeach(5) < 0
+    if(FMeach(3) >= 0)
+    {
+      cost(3) = pow(FMeach(3),2);
+      grad += 2 * FMeach(3) * space.row(3).transpose();
+    }
+    if(FMeach(4) <= 0)
+    {
+      cost(4) = pow(FMeach(4),2);
+      grad += 2 * FMeach(4) * space.row(4).transpose();
+    }
+    if(FMeach(5) >= 0)
+    {
+      cost(5) = pow(FMeach(5),2);
+      grad += 2 * FMeach(5) * space.row(5).transpose();
+    }
+
+    // FMeach(6) > 0, FMeach(7) > 0, FMeach(8) < 0
+    if(FMeach(6) <= 0)
+    {
+      cost(6) = pow(FMeach(6),2);
+      grad += 2 * FMeach(6) * space.row(6).transpose();
+    }
+    if(FMeach(7) <= 0)
+    {
+      cost(7) = pow(FMeach(7),2);
+      grad += 2 * FMeach(7) * space.row(7).transpose();
+    }
+    if(FMeach(8) >= 0)
+    {
+      cost(8) = pow(FMeach(8),2);
+      grad += 2 * FMeach(8) * space.row(8).transpose();
+    }
+
+    // FMeach(9) > 0, FMeach(10) < 0, FMeach(11) < 0
+    if(FMeach(9) <= 0)
+    {
+      cost(9) = pow(FMeach(9),2);
+      grad += 2 * FMeach(9) * space.row(9).transpose();
+    }
+    if(FMeach(10) >= 0)
+    {
+      cost(10) = pow(FMeach(10),2);
+      grad += 2 * FMeach(10) * space.row(10).transpose();
+    }
+    if(FMeach(11) >= 0)
+    {
+      cost(11) = pow(FMeach(11),2);
+      grad += 2 * FMeach(11) * space.row(11).transpose();
+    }
+
+    // minimum sum of FMeach
+    cost(12) = pow(FMeach.norm(),2);
+    grad += 2 * space.transpose() * FMeach;
+
+    cost = cost * weight_FM_feasibility_;  //乘上系数
+    grad = grad * weight_FM_feasibility_;
+  }
+
   /* callbacks by the L-BFGS optimizer */
   double PolyTrajOptimizer::costFunctionCallback_forLoad(void *func_data, const double *x, double *grad, const int n)
   {
@@ -134,7 +357,6 @@ namespace ego_planner
     opt->addPVAGradCost2CT(gradT, obs_swarm_feas_qvar_costs, opt->cps_num_prePiece_); // Time int cost
 
     opt->jerkOpt_.getGrad2TP(gradT, gradP);
-
 
     opt->VirtualTGradCost(T, t, gradT, gradt, time_cost);
 
@@ -391,7 +613,7 @@ namespace ego_planner
       Eigen::Vector3d cable_vector = swarm_p - p;
       double cable_current_length = cable_vector.norm();
 
-      // to keep cable length
+      // to keep cable cable_length_
       double dist_cable_length_err = pow(cable_length_,2) - pow(cable_current_length,2);
       // if(abs(dist_cable_length_err) > cable_tolerance_)
       // {
@@ -723,32 +945,36 @@ namespace ego_planner
   void PolyTrajOptimizer::setParam(ros::NodeHandle &nh)
   {
     nh.param("optimization/constrain_points_perPiece", cps_num_prePiece_, -1);
+
+
     nh.param("optimization/weight_obstacle", wei_obs_, -1.0);
-    nh.param("optimization/weight_swarm", wei_swarm_, -1.0);
     nh.param("optimization/weight_feasibility", wei_feas_, -1.0);
     nh.param("optimization/weight_sqrvariance", wei_sqrvar_, -1.0);
     nh.param("optimization/weight_time", wei_time_, -1.0);
-    nh.param("optimization/cable_length", cable_length_, 2.0);
-    nh.param("optimization/cable_num", cable_num_, 10);
-    nh.param("optimization/weight_cable_length", weight_cable_length_, -1.0);
-    nh.param("optimization/weight_cable_colli", weight_cable_colli_, -1.0);
-    nh.param("optimization/cable_tolerance", cable_tolerance_, 0.01);
+    nh.param("optimization/obstacle_clearance", obs_clearance_, -1.0); 
     nh.param("optimization/load_dist", load_dist_, 0.5);
-
-    nh.param("optimization/obstacle_clearance", obs_clearance_, -1.0);
-    nh.param("optimization/swarm_clearance", swarm_clearance_, -1.0);
     nh.param("optimization/max_vel", max_vel_, -1.0);
     nh.param("optimization/max_acc", max_acc_, -1.0);
+    nh.param("optimization/load_mass", load_mass_, 1.0); // 吊挂物质量
+
+    nh.param("cable/cable_length", cable_length_, 2.0);
+    nh.param("cable/uav_obs_clearance", uav_obs_clearance_, 2.0 ); //无人机距离障碍物的最小距离
+    nh.param("cable/uav_swarm_clearance", uav_swarm_clearance_, 2.0); //无人机间的最小距离
+    nh.param("cable/weight_uav_obs", weight_uav_obs_, -1.0);
+    nh.param("cable/weight_uav_swarm", weight_uav_swarm_, -1.0);
+    nh.param("cable/weight_FM_feasibility", weight_FM_feasibility_, -1.0);
 
     // set the formation type
   }
 
-  void PolyTrajOptimizer::setEnvironment(const GridMap::Ptr &map)
+  void PolyTrajOptimizer::setEnvironment(const GridMap::Ptr &map, const cable_load cable_load)
   {
     grid_map_ = map;
 
     a_star_.reset(new AStar);
     a_star_->initGridMap(grid_map_, Eigen::Vector3i(800, 200, 40));
+
+    cable_load_ = cable_load;
   }
 
   void PolyTrajOptimizer::setControlPoints(const Eigen::MatrixXd &points)

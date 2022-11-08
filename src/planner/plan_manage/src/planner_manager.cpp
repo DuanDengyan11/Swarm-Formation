@@ -15,11 +15,6 @@ namespace ego_planner
     std::cout << "des manager" << std::endl;
   }
 
-  void EGOPlannerManager::initCableLoad(ros::NodeHandle &nh)
-  {
-    cable_load_.init(nh);
-  }
-
   void EGOPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualization::Ptr vis)
   {
     /* read algorithm parameters */
@@ -36,11 +31,14 @@ namespace ego_planner
     grid_map_.reset(new GridMap);
     grid_map_->initMap(nh);
 
+    cable_load_.init(nh);
+
     ploy_traj_opt_.reset(new PolyTrajOptimizer);
     ploy_traj_opt_->setParam(nh);
-    ploy_traj_opt_->setEnvironment(grid_map_);
+    ploy_traj_opt_->setEnvironment(grid_map_, cable_load_);
 
     visualization_ = vis;
+
   }
 
   bool EGOPlannerManager::computeInitReferenceState(const Eigen::Vector3d &start_pt,
@@ -63,7 +61,6 @@ namespace ego_planner
       Eigen::VectorXd piece_dur_vec;
       int piece_nums;
       vector<Eigen::Vector3d> simple_path;
-      constexpr double init_of_init_totaldur = 2.0;
 
       headState << start_pt, start_vel, start_acc; //初始状态
       tailState << local_target_pt, local_target_vel, Eigen::Vector3d::Zero(); //目标状态
@@ -274,6 +271,12 @@ namespace ego_planner
     // success. YoY
     continous_failures_count_ = 0;
     return true;
+  }
+
+  bool EGOPlannerManager::ReboundReplanForCable(Eigen::MatrixXd accs, Eigen::MatrixXd positions, Eigen::VectorXd durations)
+  {
+    bool opt_success = ploy_traj_opt_->OptimizeTrajectory_lbfgs_forCable0(accs, positions, durations);
+    return opt_success;
   }
 
   bool EGOPlannerManager::EmergencyStop(Eigen::Vector3d stop_pos)

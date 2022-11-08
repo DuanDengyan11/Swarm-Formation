@@ -49,17 +49,16 @@ namespace ego_planner
     /* parameters */
     double no_replan_thresh_, replan_thresh_;
     double planning_horizen_, planning_horizen_time_;
-    bool flag_realworld_experiment_;
     double replan_trajectory_time_;
 
      // global goal setting for swarm
     Eigen::Vector3d swarm_central_pos_;
-    double Fcable_[50][3];
     double cable_length_;
     double m_load_;
 
     /* planning data */
-    bool have_trigger_, have_target_, have_odom_, have_new_target_, have_local_traj_;
+    bool have_target_, have_odom_, have_new_target_, have_local_traj_;
+    bool have_local_traj_cable_;
     FSM_EXEC_STATE exec_state_;
     bool flag_relan_astar_;
 
@@ -85,6 +84,8 @@ namespace ego_planner
     bool planFromGlobalTraj(const int trial_times = 1);
     bool planFromLocalTraj(bool flag_use_poly_init);
     void changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call);
+
+    bool callReboundReplanForCable(bool have_local);
 
     // void getLocalTarget();
 

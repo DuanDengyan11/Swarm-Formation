@@ -5,6 +5,7 @@ void cable_load::init(ros::NodeHandle &nh)
     nh.param("optimization/load_length", length_ , 1.0);  //吊挂物长宽高
     nh.param("optimization/load_width", width_ , 1.0);
     nh.param("optimization/load_height", height_ , 1.0);
+
     double half_length = length_/2.0, half_width = width_/2.0, half_height = height_/2.0;
 
     std::vector<Eigen::Vector3d> cable_points;
@@ -24,6 +25,7 @@ void cable_load::init(ros::NodeHandle &nh)
     G_inv = G.transpose() * (G * G.transpose()).inverse();  //不变的量
     Eigen::FullPivLU<Eigen::MatrixXd> lu(G);
     G_null_space = lu.kernel(); //不变量 G的一组基
+    
 }
 
 Eigen::Matrix3d cable_load::cal_skew_matrix(Eigen::Vector3d x)

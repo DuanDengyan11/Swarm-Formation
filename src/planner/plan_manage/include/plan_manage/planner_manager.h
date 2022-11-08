@@ -12,7 +12,6 @@
 #include <optimizer/poly_traj_utils.hpp>
 #include <cable_load/cable_load.h>
 
-
 namespace ego_planner
 {
 
@@ -35,6 +34,9 @@ namespace ego_planner
         const double trajectory_start_time, const Eigen::Vector3d &end_pt, const Eigen::Vector3d &end_vel, 
         const bool flag_polyInit, 
         const bool have_local_traj);
+
+    bool ReboundReplanForCable(Eigen::MatrixXd accs, Eigen::MatrixXd positions, Eigen::VectorXd durations);
+
     bool computeInitReferenceState(
         const Eigen::Vector3d &start_pt, const Eigen::Vector3d &start_vel, 
         const Eigen::Vector3d &start_acc, const Eigen::Vector3d &local_target_pt,
@@ -66,10 +68,10 @@ namespace ego_planner
     GridMap::Ptr grid_map_;
     // SwarmTrajData swarm_trajs_;
     TrajContainer traj_;
-
-    cable_load cable_load_;
-    void initCableLoad(ros::NodeHandle &nh);
+    TrajContainer traj_cable_coef_;
     
+    cable_load cable_load_;
+
     // ros::Publisher obj_pub_; //zx-todo
 
     PolyTrajOptimizer::Ptr ploy_traj_opt_;

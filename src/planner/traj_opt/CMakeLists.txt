@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   traj_utils
   path_searching
+  cable_load
 )
 
 catkin_package(

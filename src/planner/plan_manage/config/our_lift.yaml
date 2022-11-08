@@ -2,9 +2,9 @@
 # global goal setting
 global_goal:
   # swarm_central_pos: {x: 25.0, y: 0.0, z: 1.0}
-  cable_length : 2.0
-  m_load : 2.0
-  Fcable_1 : {x: 0.0, y: 5.1482, z: 9.8}
+  # cable_length : 2.0
+  # m_load : 2.0
+  # Fcable_1 : {x: 0.0, y: 5.1482, z: 9.8}
   # relative_pos_3 : {x: -1.7321, y: -1.0, z: 0.0} 
   # relative_pos_4 : {x: -1.7321, y: 1.0, z: 0.0}
   # relative_pos_5 : {x: 0.0, y: 2.0, z: 0.0}
@@ -15,7 +15,6 @@ global_goal:
 # map_size_y          : 30.0
 # map_size_z          : 3.0
 optimization:
-  formation_type      : 2
   weight_obstacle     : 100000.0
   weight_feasibility  : 10000.0
   weight_sqrvariance  : 10000.0
@@ -27,6 +26,16 @@ optimization:
   load_length         : 1.0
   load_width          : 0.5
   load_height         : 0.5
+  load_mass           : 2.0
+
+
+cable:
+  cable_length        : 2.0
+  uav_obs_clearance   : 2.0
+  uav_swarm_clearance : 2.0
+  weight_uav_obs      : 10000.0
+  weight_uav_swarm    : 10000.0
+  weight_FM_feasibility : 10000.0   
 
 fsm:
   replan_trajectory_time : 0.1    # s, the max time of replanning trajectory
