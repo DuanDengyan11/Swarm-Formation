@@ -78,7 +78,7 @@
 
 <!-- new add cable check -->
     <param name="fsm/cable_collision" value="0" type="int"/>
-    <param name="fsm/result_file" value="/home/oem/ddy/ego_swarm_1.txt"/>
+    <param name="fsm/result_file" value="/home/ddy/ego_swarm_1.txt"/>
     
     <param name="grid_map/resolution"             value="0.1" /> 
     <param name="grid_map/map_size_x"             value="$(arg map_size_x_)" /> 
