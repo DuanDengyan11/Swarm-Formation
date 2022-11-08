@@ -99,7 +99,7 @@ namespace ego_planner
 
     /* set variables */
     void setParam(ros::NodeHandle &nh);
-    void setEnvironment(const GridMap::Ptr &map, const cable_load &cable_load);
+    void setEnvironment(const GridMap::Ptr &map, const cable_load &CLoad);
     void setControlPoints(const Eigen::MatrixXd &points);
     void setSwarmTrajs(SwarmTrajData *swarm_trajs_ptr);
     void setDroneId(const int drone_id);

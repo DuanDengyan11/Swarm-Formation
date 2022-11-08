@@ -868,14 +868,14 @@ namespace ego_planner
     // set the formation type
   }
 
-  void PolyTrajOptimizer::setEnvironment(const GridMap::Ptr &map, const cable_load &cable_load)
+  void PolyTrajOptimizer::setEnvironment(const GridMap::Ptr &map, const cable_load &CLoad)
   {
     grid_map_ = map;
 
     a_star_.reset(new AStar);
     a_star_->initGridMap(grid_map_, Eigen::Vector3i(800, 200, 40));
 
-    cable_load_ = cable_load;
+    cable_load_ = CLoad;
   }
 
   void PolyTrajOptimizer::setControlPoints(const Eigen::MatrixXd &points)
