@@ -78,10 +78,10 @@ namespace ego_planner
 
   bool PolyTrajOptimizer::OptimizeTrajectory_lbfgs_forCable0(Eigen::MatrixXd accs, Eigen::MatrixXd positions, Eigen::VectorXd durations)
   { 
-    double cable_coef[6];
-    for (size_t i = 0; i < accs.size(); i++)
+    Eigen::Matrix<double, 6, 1> cable_coef;
+    for (size_t i = 0; i < accs.cols(); i++)
     {
-      OptimizeTrajectory_lbfgs_forCable(accs.col(i), positions.col(i), cable_coef);
+      cable_coef = OptimizeTrajectory_lbfgs_forCable(accs.col(i), positions.col(i));
     }
     
     return true;
@@ -90,37 +90,52 @@ namespace ego_planner
 
   }
 
-  bool PolyTrajOptimizer::OptimizeTrajectory_lbfgs_forCable(Eigen::VectorXd acc, Eigen::VectorXd position, double cable_coef[6])
+  Eigen::Matrix<double, 6, 1>  PolyTrajOptimizer::OptimizeTrajectory_lbfgs_forCable(Eigen::Vector3d acc, Eigen::Vector3d position)
   {
     //calculate the position of cable points
+    points_positions.clear();
     for (size_t i = 0; i < 4; i++)
     {
-      // Eigen::Vector3d point_position = position + cable_load_->cable_points[i];
-      // points_positions.push_back(point_position);
+      Eigen::Vector3d point_position = position + Transformb2e * cable_load_->cable_points[i];
+      points_positions.push_back(point_position);
     }
 
-    // FM << load_mass_ * acc, 0.0, 0.0, 0.0;
+    Eigen::Vector3d gra_vector;
+    gra_vector << 0.0, 0.0, -9.8;
+    FM << load_mass_ * (acc + gra_vector), 0.0, 0.0, 0.0;
 
-    // double final_cost;
+    double final_cost;
+    double q[6];
+    lbfgs::lbfgs_parameter_t lbfgs_params;
+    lbfgs::lbfgs_load_default_parameters(&lbfgs_params);
+    lbfgs_params.mem_size = 16;
+    lbfgs_params.g_epsilon = 0.1;
+    lbfgs_params.min_step = 1e-32;
+    lbfgs_params.max_iterations = 60; // 200
 
-    // lbfgs::lbfgs_parameter_t lbfgs_params;
-    // lbfgs::lbfgs_load_default_parameters(&lbfgs_params);
-    // lbfgs_params.mem_size = 16;
-    // lbfgs_params.g_epsilon = 0.1;
-    // lbfgs_params.min_step = 1e-32;
-    // lbfgs_params.max_iterations = 60; // 200
+    int result = lbfgs::lbfgs_optimize(
+        6,
+        q,
+        &final_cost,
+        PolyTrajOptimizer::costFunctionCallback_forCable,
+        NULL,
+        PolyTrajOptimizer::earlyExitCallback_forCable,
+        this,
+        &lbfgs_params);
+    
+    Eigen::Matrix<double, 6, 1>  cable_coef;
+    cable_coef << q[0], q[1], q[2], q[3], q[4], q[5];
+    
+    Eigen::VectorXd FM_each = cable_load_->G_inv*FM + cable_load_->G_null_space*cable_coef;
 
-    // int result = lbfgs::lbfgs_optimize(
-    //     6,
-    //     cable_coef,
-    //     &final_cost,
-    //     PolyTrajOptimizer::costFunctionCallback_forCable,
-    //     NULL,
-    //     PolyTrajOptimizer::earlyExitCallback_forCable,
-    //     this,
-    //     &lbfgs_params);
+    for (size_t i = 0; i < 4; i++)
+    {
+      Eigen::Vector3d FMi = FM_each.block<3,1>(3*i,0);
+      Eigen::Vector3d qi = FMi / FMi.norm();
+      Eigen::Vector3d uav_position = points_positions[i] + Transformb2e * cable_length_ * qi;
+    }
 
-    return true;
+    return cable_coef;
 
   }
 
@@ -177,6 +192,10 @@ namespace ego_planner
     Eigen::VectorXd cost_swarm(6), grad_swarm(6);
     opt->addSwarmForCable(FM_each, grad_swarm, cost_swarm);
 
+    cout << "cost_feasibility" << cost_feasibility << endl;
+    cout << "cost_collision" << cost_collision << endl;
+    cout << "cost_swarm" << cost_swarm << endl;
+
     grad_cable_coef = grad_feasibility + grad_collision + grad_swarm;
     return cost_feasibility.sum() + cost_collision.sum() + cost_swarm.sum();
   }
@@ -199,13 +218,13 @@ namespace ego_planner
     {
       Eigen::Vector3d FMi = FMeach.block<3,1>(3*i,0);
       Eigen::Vector3d qi = FMi / FMi.norm();
-      Eigen::Vector3d uav_position_i = points_positions[i] + cable_length_ * qi;
+      Eigen::Vector3d uav_position_i = points_positions[i] + Transformb2e * cable_length_ * qi;
       Eigen::MatrixXd Gi = space.block<3,6>(3*i,0);
       for (size_t j = i+1; j < 4; j++)
       {
         Eigen::Vector3d FMj = FMeach.block<3,1>(3*j,0);
         Eigen::Vector3d qj = FMj / FMj.norm();
-        Eigen::Vector3d uav_position_j = points_positions[j] + cable_length_ * qj;
+        Eigen::Vector3d uav_position_j = points_positions[j] + Transformb2e * cable_length_ * qj;
         Eigen::MatrixXd Gj = space.block<3,6>(3*j,0);
         
         Eigen::Vector3d dist_vector = uav_position_j - uav_position_i;
@@ -215,7 +234,7 @@ namespace ego_planner
         {
           cost(index) = weight_uav_swarm_ * pow(dist_err,3);
           
-          grad += weight_uav_swarm_ * pow(dist_err, 2) * ( Gj.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qj*qj.transpose()) / FMj.norm()).transpose() - Gi.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qi*qi.transpose()) / FMi.norm()).transpose() ) * (-2) * dist_vector;
+          grad += weight_uav_swarm_ * 3 * pow(dist_err, 2) * ( Gj.transpose() * ((Eigen::Matrix3d::Identity()-qj*qj.transpose()) / FMj.norm()).transpose() - Gi.transpose() * ((Eigen::Matrix3d::Identity()-qi*qi.transpose()) / FMi.norm()).transpose() ) * (cable_length_*Transformb2e).transpose() * (-2) * dist_vector;
         }
         index++;
       }
@@ -234,7 +253,7 @@ namespace ego_planner
     {
       Eigen::Vector3d FMi = FMeach.block<3,1>(3*i,0);
       Eigen::Vector3d qi = FMi / FMi.norm();
-      Eigen::Vector3d uav_position = points_positions[i] + cable_length_ * qi;
+      Eigen::Vector3d uav_position = points_positions[i] + Transformb2e * cable_length_ * qi;
       grid_map_->evaluateEDT(uav_position, dist);
       dist_err = uav_obs_clearance_ - dist;
       if(dist_err>0)
@@ -244,7 +263,7 @@ namespace ego_planner
         Eigen::Vector3d dist_grad;
         grid_map_->evaluateFirstGrad(uav_position, dist_grad);
         Eigen::MatrixXd Gi = space.block<3,6>(3*i,0);
-        grad += weight_uav_obs_ * 3 * pow(dist_err,2) * (-1) * Gi.transpose() * (cable_length_ * (Eigen::Matrix3d::Identity()-qi*qi.transpose()) / FMi.norm()).transpose() * dist_grad;
+        grad += weight_uav_obs_ * 3 * pow(dist_err,2) * (-1) * Gi.transpose() * ((Eigen::Matrix3d::Identity()-qi*qi.transpose()) / FMi.norm()).transpose() * (cable_length_*Transformb2e).transpose() * dist_grad;
       }
     }
   }
@@ -324,12 +343,13 @@ namespace ego_planner
       grad += 2 * FMeach(11) * space.row(11).transpose();
     }
 
+    cost = cost * weight_FM_feasibility_;  //乘上系数
+    grad = grad * weight_FM_feasibility_;
+
     // minimum sum of FMeach
     cost(12) = pow(FMeach.norm(),2);
     grad += 2 * space.transpose() * FMeach;
 
-    cost = cost * weight_FM_feasibility_;  //乘上系数
-    grad = grad * weight_FM_feasibility_;
   }
 
   /* callbacks by the L-BFGS optimizer */

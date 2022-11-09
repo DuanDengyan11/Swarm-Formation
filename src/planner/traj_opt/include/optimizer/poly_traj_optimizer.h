@@ -54,6 +54,7 @@ namespace ego_planner
 
     std::vector<Eigen::Vector3d> points_positions;
     Eigen::Matrix<double, 6, 1> FM;
+    Eigen::Matrix3d Transformb2e;
 
     string result_fn_;
     fstream result_file_;
@@ -94,7 +95,11 @@ namespace ego_planner
 
   public:
 
-    PolyTrajOptimizer() {}
+    PolyTrajOptimizer() {
+         Transformb2e << 1.0, 0.0, 0.0,
+    0.0, -1.0, 0.0,
+    0.0, 0.0, -1.0;
+    }
     ~PolyTrajOptimizer() {}
 
     /* set variables */
@@ -118,7 +123,7 @@ namespace ego_planner
                             Eigen::MatrixXd &optimal_points);
                   
     bool OptimizeTrajectory_lbfgs_forCable0(Eigen::MatrixXd accs, Eigen::MatrixXd positions, Eigen::VectorXd durations);
-    bool OptimizeTrajectory_lbfgs_forCable(Eigen::VectorXd acc, Eigen::VectorXd position, double cable_coef[6]);
+    Eigen::Matrix<double, 6, 1> OptimizeTrajectory_lbfgs_forCable(Eigen::Vector3d acc, Eigen::Vector3d position);
                                             
     void astarWithMinTraj( const Eigen::MatrixXd &iniState, 
                            const Eigen::MatrixXd &finState,

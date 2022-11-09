@@ -448,11 +448,11 @@ namespace poly_traj
         {
             int N = getPieceNum();
             Eigen::MatrixXd accs(3, N + 1);
-            // for (int i = 0; i < N; i++)
-            // {
-            //     accs.col(i) = pieces[i].getAcc(0.0);
-            // }
-            // accs.col(N) = pieces[N - 1].getAcc(pieces[N - 1].getDuration());
+            for (int i = 0; i < N; i++)
+            {
+                accs.col(i) = pieces[i].getAcc(0.0);
+            }
+            accs.col(N) = pieces[N - 1].getAcc(pieces[N - 1].getDuration());
             return accs;
         }
 
