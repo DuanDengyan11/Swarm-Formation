@@ -78,11 +78,11 @@ namespace ego_planner
 
   bool PolyTrajOptimizer::OptimizeTrajectory_lbfgs_forCable0(Eigen::MatrixXd accs, Eigen::MatrixXd positions, Eigen::VectorXd durations)
   { 
-    // double cable_coef[6];
-    // for (size_t i = 0; i < accs.size(); i++)
-    // {
-    //   OptimizeTrajectory_lbfgs_forCable(accs.col(i), positions.col(i), cable_coef);
-    // }
+    double cable_coef[6];
+    for (size_t i = 0; i < accs.size(); i++)
+    {
+      OptimizeTrajectory_lbfgs_forCable(accs.col(i), positions.col(i), cable_coef);
+    }
     
     return true;
 
@@ -99,26 +99,26 @@ namespace ego_planner
       points_positions.push_back(point_position);
     }
 
-    FM << load_mass_ * acc, 0.0, 0.0, 0.0;
+    // FM << load_mass_ * acc, 0.0, 0.0, 0.0;
 
-    double final_cost;
+    // double final_cost;
 
-    lbfgs::lbfgs_parameter_t lbfgs_params;
-    lbfgs::lbfgs_load_default_parameters(&lbfgs_params);
-    lbfgs_params.mem_size = 16;
-    lbfgs_params.g_epsilon = 0.1;
-    lbfgs_params.min_step = 1e-32;
-    lbfgs_params.max_iterations = 60; // 200
+    // lbfgs::lbfgs_parameter_t lbfgs_params;
+    // lbfgs::lbfgs_load_default_parameters(&lbfgs_params);
+    // lbfgs_params.mem_size = 16;
+    // lbfgs_params.g_epsilon = 0.1;
+    // lbfgs_params.min_step = 1e-32;
+    // lbfgs_params.max_iterations = 60; // 200
 
-    int result = lbfgs::lbfgs_optimize(
-        6,
-        cable_coef,
-        &final_cost,
-        PolyTrajOptimizer::costFunctionCallback_forCable,
-        NULL,
-        PolyTrajOptimizer::earlyExitCallback_forCable,
-        this,
-        &lbfgs_params);
+    // int result = lbfgs::lbfgs_optimize(
+    //     6,
+    //     cable_coef,
+    //     &final_cost,
+    //     PolyTrajOptimizer::costFunctionCallback_forCable,
+    //     NULL,
+    //     PolyTrajOptimizer::earlyExitCallback_forCable,
+    //     this,
+    //     &lbfgs_params);
 
     return true;
 
