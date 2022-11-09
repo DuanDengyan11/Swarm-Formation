@@ -81,7 +81,7 @@ namespace ego_planner
     double cable_coef[6];
     for (size_t i = 0; i < accs.size(); i++)
     {
-      // OptimizeTrajectory_lbfgs_forCable(accs.col(i), positions.col(i), cable_coef);
+      OptimizeTrajectory_lbfgs_forCable(accs.col(i), positions.col(i), cable_coef);
     }
     
     return true;
