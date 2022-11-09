@@ -93,11 +93,11 @@ namespace ego_planner
   bool PolyTrajOptimizer::OptimizeTrajectory_lbfgs_forCable(Eigen::Vector3d acc, Eigen::Vector3d position, double cable_coef[6])
   {
     //calculate the position of cable points
-    // for (size_t i = 0; i < 4; i++)
-    // {
-    //   Eigen::Vector3d point_position = position + cable_load_->cable_points[i];
-    //   points_positions.push_back(point_position);
-    // }
+    for (size_t i = 0; i < 4; i++)
+    {
+      Eigen::Vector3d point_position = position + cable_load_->cable_points[i];
+      // points_positions.push_back(point_position);
+    }
 
     // FM << load_mass_ * acc, 0.0, 0.0, 0.0;
 
