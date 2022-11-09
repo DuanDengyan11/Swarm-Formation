@@ -79,10 +79,26 @@ namespace ego_planner
   bool PolyTrajOptimizer::OptimizeTrajectory_lbfgs_forCable0(Eigen::MatrixXd accs, Eigen::MatrixXd positions, Eigen::VectorXd durations)
   { 
     Eigen::Matrix<double, 6, 1> cable_coef;
-    for (size_t i = 0; i < accs.cols(); i++)
+    Eigen::MatrixXd cable_coefs;
+
+    cout << "size" << accs.cols << positions.cols << durations.size() << andl;
+
+    int N = accs.cols();
+    cable_coefs.resize(6,N);
+    for (size_t i = 0; i < N; i++)
     {
-      cable_coef = OptimizeTrajectory_lbfgs_forCable(accs.col(i), positions.col(i));
+       cable_coef= OptimizeTrajectory_lbfgs_forCable(accs.col(i), positions.col(i));
     }
+
+    Eigen::Matrix3d initCable0, finCable0;
+    Eigen::MatrixXd inerCable0;
+
+    initCable0 << cable_coefs.block<1,3>(0,0), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
+    finCable0 << cable_coefs.block<1,3>(0,N-1), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
+    inerCable0.resize(3, N-2);
+    inerCable0 = cable_coefs.block<3,N-2>(0,1)
+    
+    jerkOpt_Cable0.reset(initCable0, finCable0, N-1);
     
     return true;
 
@@ -100,9 +116,10 @@ namespace ego_planner
       points_positions.push_back(point_position);
     }
 
-    Eigen::Vector3d gra_vector;
+    Eigen::Vector3d gra_vector, acc_b;
     gra_vector << 0.0, 0.0, -9.8;
-    FM << load_mass_ * (acc + gra_vector), 0.0, 0.0, 0.0;
+    acc_b << acc[0], -acc[1], -acc[2];  //the angle between earth and body coordinates is [pi, 0, 0]
+    FM << load_mass_ * (acc_b + gra_vector), 0.0, 0.0, 0.0;
 
     double final_cost;
     double q[6];
@@ -191,10 +208,6 @@ namespace ego_planner
     //swarm
     Eigen::VectorXd cost_swarm(6), grad_swarm(6);
     opt->addSwarmForCable(FM_each, grad_swarm, cost_swarm);
-
-    cout << "cost_feasibility" << cost_feasibility << endl;
-    cout << "cost_collision" << cost_collision << endl;
-    cout << "cost_swarm" << cost_swarm << endl;
 
     grad_cable_coef = grad_feasibility + grad_collision + grad_swarm;
     return cost_feasibility.sum() + cost_collision.sum() + cost_swarm.sum();

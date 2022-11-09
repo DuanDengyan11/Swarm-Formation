@@ -42,6 +42,10 @@ namespace ego_planner
     
     AStar::Ptr a_star_;
     poly_traj::MinJerkOpt jerkOpt_;
+
+    poly_traj::MinJerkOpt jerkOpt_Cable0;
+    poly_traj::MinJerkOpt jerkOpt_Cable1;
+
     SwarmTrajData *swarm_trajs_{NULL}; // Can not use shared_ptr and no need to free
     ConstrainPoints cps_;
 
