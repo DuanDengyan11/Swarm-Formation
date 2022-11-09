@@ -118,7 +118,7 @@ namespace ego_planner
                             Eigen::MatrixXd &optimal_points);
                   
     bool OptimizeTrajectory_lbfgs_forCable0(Eigen::MatrixXd accs, Eigen::MatrixXd positions, Eigen::VectorXd durations);
-    bool OptimizeTrajectory_lbfgs_forCable(Eigen::Vector3d acc, Eigen::Vector3d position, double cable_coef[6]);
+    bool OptimizeTrajectory_lbfgs_forCable(Eigen::VectorXd acc, Eigen::VectorXd position, double cable_coef[6]);
                                             
     void astarWithMinTraj( const Eigen::MatrixXd &iniState, 
                            const Eigen::MatrixXd &finState,
