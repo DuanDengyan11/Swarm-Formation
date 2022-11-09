@@ -81,7 +81,7 @@ namespace ego_planner
     Eigen::Matrix<double, 6, 1> cable_coef;
     Eigen::MatrixXd cable_coefs;
 
-    cout << "size" << accs.cols << positions.cols << durations.size() << andl;
+    cout << "size" << accs.cols() << positions.cols() << durations.size() << endl;
 
     int N = accs.cols();
     cable_coefs.resize(6,N);
@@ -93,12 +93,18 @@ namespace ego_planner
     Eigen::Matrix3d initCable0, finCable0;
     Eigen::MatrixXd inerCable0;
 
-    initCable0 << cable_coefs.block<1,3>(0,0), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
-    finCable0 << cable_coefs.block<1,3>(0,N-1), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
+    initCable0 << cable_coefs.block<3,1>(0,0), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
+    finCable0 << cable_coefs.block<3,1>(0,N-1), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
     inerCable0.resize(3, N-2);
-    inerCable0 = cable_coefs.block<3,N-2>(0,1)
+    for (size_t i = 1; i < N-1; i++)
+    {
+      inerCable0.col(i-1) = cable_coefs.block<3,1>(0,i);
+    }
     
     jerkOpt_Cable0.reset(initCable0, finCable0, N-1);
+    jerkOpt_Cable0.generate(inerCable0, durations);
+
+    
     
     return true;
 

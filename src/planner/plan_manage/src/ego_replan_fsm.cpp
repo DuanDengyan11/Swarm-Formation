@@ -327,7 +327,7 @@ namespace ego_planner
     {
       traj_utils::PolyTraj msg;
       polyTraj2ROSMsg(msg);
-      poly_traj_pub_.publish(msg); //若轨迹规划成功则发布消息
+      poly_traj_pub_.publish(msg); //若轨迹规划成功则发布消息 to odometry
       have_local_traj_ = true;
     }
 
