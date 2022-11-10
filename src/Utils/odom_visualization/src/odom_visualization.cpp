@@ -47,12 +47,12 @@ ros::Publisher pathPub4;
 ros::Publisher meshPub4;
 
 tf::TransformBroadcaster* broadcaster;
-geometry_msgs::PoseStamped poseROS;
-nav_msgs::Path             pathROS;
-visualization_msgs::Marker meshROS;
 string _frame_id;
 int _drone_id;
 
+  geometry_msgs::PoseStamped poseROS1;
+  nav_msgs::Path             pathROS1;
+  visualization_msgs::Marker meshROS1;
 void odom_callback1(const nav_msgs::Odometry::ConstPtr& msg)
 {
    if (msg->header.frame_id == string("null"))
@@ -88,38 +88,38 @@ void odom_callback1(const nav_msgs::Odometry::ConstPtr& msg)
   }
 
   // Pose
-  poseROS.header = msg->header;
-  poseROS.header.stamp = msg->header.stamp;
-  poseROS.header.frame_id = string("world");
-  poseROS.pose.position.x = pose(0);
-  poseROS.pose.position.y = pose(1);
-  poseROS.pose.position.z = pose(2);
+  poseROS1.header = msg->header;
+  poseROS1.header.stamp = msg->header.stamp;
+  poseROS1.header.frame_id = string("world");
+  poseROS1.pose.position.x = pose(0);
+  poseROS1.pose.position.y = pose(1);
+  poseROS1.pose.position.z = pose(2);
   q = R_to_quaternion(ypr_to_R(pose.rows(3,5)));
-  poseROS.pose.orientation.w = q(0);
-  poseROS.pose.orientation.x = q(1);
-  poseROS.pose.orientation.y = q(2);
-  poseROS.pose.orientation.z = q(3);      
+  poseROS1.pose.orientation.w = q(0);
+  poseROS1.pose.orientation.x = q(1);
+  poseROS1.pose.orientation.y = q(2);
+  poseROS1.pose.orientation.z = q(3);      
 
   // Path
   static ros::Time prevt = msg->header.stamp;
   if ((msg->header.stamp - prevt).toSec() > 0.1)
   {
     prevt = msg->header.stamp;
-    pathROS.header = poseROS.header;
-    pathROS.poses.push_back(poseROS);
-    pathPub1.publish(pathROS);
+    pathROS1.header = poseROS1.header;
+    pathROS1.poses.push_back(poseROS1);
+    pathPub1.publish(pathROS1);
   }
 
   // Mesh model                                                  
-  meshROS.header.frame_id = _frame_id;
-  meshROS.header.stamp = msg->header.stamp; 
-  meshROS.ns = "mesh";
-  meshROS.id = 0;
-  meshROS.type = visualization_msgs::Marker::MESH_RESOURCE;
-  meshROS.action = visualization_msgs::Marker::ADD;
-  meshROS.pose.position.x = msg->pose.pose.position.x + cross_x1;
-  meshROS.pose.position.y = msg->pose.pose.position.y + cross_y1;
-  meshROS.pose.position.z = msg->pose.pose.position.z + cross_z1;
+  meshROS1.header.frame_id = _frame_id;
+  meshROS1.header.stamp = msg->header.stamp; 
+  meshROS1.ns = "mesh";
+  meshROS1.id = 0;
+  meshROS1.type = visualization_msgs::Marker::MESH_RESOURCE;
+  meshROS1.action = visualization_msgs::Marker::ADD;
+  meshROS1.pose.position.x = msg->pose.pose.position.x + cross_x1;
+  meshROS1.pose.position.y = msg->pose.pose.position.y + cross_y1;
+  meshROS1.pose.position.z = msg->pose.pose.position.z + cross_z1;
   q(0) = msg->pose.pose.orientation.w;
   q(1) = msg->pose.pose.orientation.x;
   q(2) = msg->pose.pose.orientation.y;
@@ -132,22 +132,25 @@ void odom_callback1(const nav_msgs::Odometry::ConstPtr& msg)
     ypr(2)    += cross_roll1*PI/180.0;
     q          = R_to_quaternion(ypr_to_R(ypr)); 
   }  
-  meshROS.pose.orientation.w = q(0);
-  meshROS.pose.orientation.x = q(1);
-  meshROS.pose.orientation.y = q(2);
-  meshROS.pose.orientation.z = q(3);
-  meshROS.scale.x = scale1;
-  meshROS.scale.y = scale1;
-  meshROS.scale.z = scale1;
-  meshROS.color.a = color_a;
-  meshROS.color.r = color_r;
-  meshROS.color.g = color_g;
-  meshROS.color.b = color_b;
-  meshROS.mesh_resource = mesh_resource_heli1;
-  meshPub1.publish(meshROS);
+  meshROS1.pose.orientation.w = q(0);
+  meshROS1.pose.orientation.x = q(1);
+  meshROS1.pose.orientation.y = q(2);
+  meshROS1.pose.orientation.z = q(3);
+  meshROS1.scale.x = scale1;
+  meshROS1.scale.y = scale1;
+  meshROS1.scale.z = scale1;
+  meshROS1.color.a = color_a;
+  meshROS1.color.r = color_r;
+  meshROS1.color.g = color_g;
+  meshROS1.color.b = color_b;
+  meshROS1.mesh_resource = mesh_resource_heli1;
+  meshPub1.publish(meshROS1);
 
 }
 
+geometry_msgs::PoseStamped poseROS2;
+nav_msgs::Path             pathROS2;
+visualization_msgs::Marker meshROS2;
 void odom_callback2(const nav_msgs::Odometry::ConstPtr& msg)
 {
     if (msg->header.frame_id == string("null"))
@@ -183,38 +186,38 @@ void odom_callback2(const nav_msgs::Odometry::ConstPtr& msg)
   }
 
   // Pose
-  poseROS.header = msg->header;
-  poseROS.header.stamp = msg->header.stamp;
-  poseROS.header.frame_id = string("world");
-  poseROS.pose.position.x = pose(0);
-  poseROS.pose.position.y = pose(1);
-  poseROS.pose.position.z = pose(2);
+  poseROS2.header = msg->header;
+  poseROS2.header.stamp = msg->header.stamp;
+  poseROS2.header.frame_id = string("world");
+  poseROS2.pose.position.x = pose(0);
+  poseROS2.pose.position.y = pose(1);
+  poseROS2.pose.position.z = pose(2);
   q = R_to_quaternion(ypr_to_R(pose.rows(3,5)));
-  poseROS.pose.orientation.w = q(0);
-  poseROS.pose.orientation.x = q(1);
-  poseROS.pose.orientation.y = q(2);
-  poseROS.pose.orientation.z = q(3);      
+  poseROS2.pose.orientation.w = q(0);
+  poseROS2.pose.orientation.x = q(1);
+  poseROS2.pose.orientation.y = q(2);
+  poseROS2.pose.orientation.z = q(3);      
 
   // Path
   static ros::Time prevt = msg->header.stamp;
   if ((msg->header.stamp - prevt).toSec() > 0.1)
   {
     prevt = msg->header.stamp;
-    pathROS.header = poseROS.header;
-    pathROS.poses.push_back(poseROS);
-    pathPub2.publish(pathROS);
+    pathROS2.header = poseROS2.header;
+    pathROS2.poses.push_back(poseROS2);
+    pathPub2.publish(pathROS2);
   }
 
   // Mesh model                                                  
-  meshROS.header.frame_id = _frame_id;
-  meshROS.header.stamp = msg->header.stamp; 
-  meshROS.ns = "mesh";
-  meshROS.id = 0;
-  meshROS.type = visualization_msgs::Marker::MESH_RESOURCE;
-  meshROS.action = visualization_msgs::Marker::ADD;
-  meshROS.pose.position.x = msg->pose.pose.position.x + cross_x2;
-  meshROS.pose.position.y = msg->pose.pose.position.y + cross_y2;
-  meshROS.pose.position.z = msg->pose.pose.position.z + cross_z2;
+  meshROS2.header.frame_id = _frame_id;
+  meshROS2.header.stamp = msg->header.stamp; 
+  meshROS2.ns = "mesh";
+  meshROS2.id = 0;
+  meshROS2.type = visualization_msgs::Marker::MESH_RESOURCE;
+  meshROS2.action = visualization_msgs::Marker::ADD;
+  meshROS2.pose.position.x = msg->pose.pose.position.x + cross_x2;
+  meshROS2.pose.position.y = msg->pose.pose.position.y + cross_y2;
+  meshROS2.pose.position.z = msg->pose.pose.position.z + cross_z2;
   q(0) = msg->pose.pose.orientation.w;
   q(1) = msg->pose.pose.orientation.x;
   q(2) = msg->pose.pose.orientation.y;
@@ -227,24 +230,28 @@ void odom_callback2(const nav_msgs::Odometry::ConstPtr& msg)
     ypr(2)    += cross_roll2*PI/180.0;
     q          = R_to_quaternion(ypr_to_R(ypr)); 
   }  
-  meshROS.pose.orientation.w = q(0);
-  meshROS.pose.orientation.x = q(1);
-  meshROS.pose.orientation.y = q(2);
-  meshROS.pose.orientation.z = q(3);
-  meshROS.scale.x = scale2;
-  meshROS.scale.y = scale2;
-  meshROS.scale.z = scale2;
-  meshROS.color.a = color_a;
-  meshROS.color.r = color_r;
-  meshROS.color.g = color_g;
-  meshROS.color.b = color_b;
-  meshROS.mesh_resource = mesh_resource_heli2;
-  meshPub2.publish(meshROS);
+  meshROS2.pose.orientation.w = q(0);
+  meshROS2.pose.orientation.x = q(1);
+  meshROS2.pose.orientation.y = q(2);
+  meshROS2.pose.orientation.z = q(3);
+  meshROS2.scale.x = scale2;
+  meshROS2.scale.y = scale2;
+  meshROS2.scale.z = scale2;
+  meshROS2.color.a = color_a;
+  meshROS2.color.r = color_r;
+  meshROS2.color.g = color_g;
+  meshROS2.color.b = color_b;
+  meshROS2.mesh_resource = mesh_resource_heli2;
+  meshPub2.publish(meshROS2);
 
 }
 
+geometry_msgs::PoseStamped poseROS3;
+nav_msgs::Path             pathROS3;
+visualization_msgs::Marker meshROS3;
 void odom_callback3(const nav_msgs::Odometry::ConstPtr& msg)
 {
+
     if (msg->header.frame_id == string("null"))
     return;
 
@@ -278,38 +285,38 @@ void odom_callback3(const nav_msgs::Odometry::ConstPtr& msg)
   }
 
   // Pose
-  poseROS.header = msg->header;
-  poseROS.header.stamp = msg->header.stamp;
-  poseROS.header.frame_id = string("world");
-  poseROS.pose.position.x = pose(0);
-  poseROS.pose.position.y = pose(1);
-  poseROS.pose.position.z = pose(2);
+  poseROS3.header = msg->header;
+  poseROS3.header.stamp = msg->header.stamp;
+  poseROS3.header.frame_id = string("world");
+  poseROS3.pose.position.x = pose(0);
+  poseROS3.pose.position.y = pose(1);
+  poseROS3.pose.position.z = pose(2);
   q = R_to_quaternion(ypr_to_R(pose.rows(3,5)));
-  poseROS.pose.orientation.w = q(0);
-  poseROS.pose.orientation.x = q(1);
-  poseROS.pose.orientation.y = q(2);
-  poseROS.pose.orientation.z = q(3);      
+  poseROS3.pose.orientation.w = q(0);
+  poseROS3.pose.orientation.x = q(1);
+  poseROS3.pose.orientation.y = q(2);
+  poseROS3.pose.orientation.z = q(3);      
 
   // Path
   static ros::Time prevt = msg->header.stamp;
   if ((msg->header.stamp - prevt).toSec() > 0.1)
   {
     prevt = msg->header.stamp;
-    pathROS.header = poseROS.header;
-    pathROS.poses.push_back(poseROS);
-    pathPub3.publish(pathROS);
+    pathROS3.header = poseROS3.header;
+    pathROS3.poses.push_back(poseROS3);
+    pathPub3.publish(pathROS3);
   }
 
   // Mesh model                                                  
-  meshROS.header.frame_id = _frame_id;
-  meshROS.header.stamp = msg->header.stamp; 
-  meshROS.ns = "mesh";
-  meshROS.id = 0;
-  meshROS.type = visualization_msgs::Marker::MESH_RESOURCE;
-  meshROS.action = visualization_msgs::Marker::ADD;
-  meshROS.pose.position.x = msg->pose.pose.position.x + cross_x3;
-  meshROS.pose.position.y = msg->pose.pose.position.y + cross_y3;
-  meshROS.pose.position.z = msg->pose.pose.position.z + cross_z3;
+  meshROS3.header.frame_id = _frame_id;
+  meshROS3.header.stamp = msg->header.stamp; 
+  meshROS3.ns = "mesh";
+  meshROS3.id = 0;
+  meshROS3.type = visualization_msgs::Marker::MESH_RESOURCE;
+  meshROS3.action = visualization_msgs::Marker::ADD;
+  meshROS3.pose.position.x = msg->pose.pose.position.x + cross_x3;
+  meshROS3.pose.position.y = msg->pose.pose.position.y + cross_y3;
+  meshROS3.pose.position.z = msg->pose.pose.position.z + cross_z3;
   q(0) = msg->pose.pose.orientation.w;
   q(1) = msg->pose.pose.orientation.x;
   q(2) = msg->pose.pose.orientation.y;
@@ -322,24 +329,28 @@ void odom_callback3(const nav_msgs::Odometry::ConstPtr& msg)
     ypr(2)    += cross_roll3*PI/180.0;
     q          = R_to_quaternion(ypr_to_R(ypr)); 
   }  
-  meshROS.pose.orientation.w = q(0);
-  meshROS.pose.orientation.x = q(1);
-  meshROS.pose.orientation.y = q(2);
-  meshROS.pose.orientation.z = q(3);
-  meshROS.scale.x = scale3;
-  meshROS.scale.y = scale3;
-  meshROS.scale.z = scale3;
-  meshROS.color.a = color_a;
-  meshROS.color.r = color_r;
-  meshROS.color.g = color_g;
-  meshROS.color.b = color_b;
-  meshROS.mesh_resource = mesh_resource_heli3;
-  meshPub3.publish(meshROS);
+  meshROS3.pose.orientation.w = q(0);
+  meshROS3.pose.orientation.x = q(1);
+  meshROS3.pose.orientation.y = q(2);
+  meshROS3.pose.orientation.z = q(3);
+  meshROS3.scale.x = scale3;
+  meshROS3.scale.y = scale3;
+  meshROS3.scale.z = scale3;
+  meshROS3.color.a = color_a;
+  meshROS3.color.r = color_r;
+  meshROS3.color.g = color_g;
+  meshROS3.color.b = color_b;
+  meshROS3.mesh_resource = mesh_resource_heli3;
+  meshPub3.publish(meshROS3);
 
 }
 
+geometry_msgs::PoseStamped poseROS4;
+nav_msgs::Path             pathROS4;
+visualization_msgs::Marker meshROS4;
 void odom_callback4(const nav_msgs::Odometry::ConstPtr& msg)
 {
+
     if (msg->header.frame_id == string("null"))
     return;
 
@@ -373,38 +384,38 @@ void odom_callback4(const nav_msgs::Odometry::ConstPtr& msg)
   }
 
   // Pose
-  poseROS.header = msg->header;
-  poseROS.header.stamp = msg->header.stamp;
-  poseROS.header.frame_id = string("world");
-  poseROS.pose.position.x = pose(0);
-  poseROS.pose.position.y = pose(1);
-  poseROS.pose.position.z = pose(2);
+  poseROS4.header = msg->header;
+  poseROS4.header.stamp = msg->header.stamp;
+  poseROS4.header.frame_id = string("world");
+  poseROS4.pose.position.x = pose(0);
+  poseROS4.pose.position.y = pose(1);
+  poseROS4.pose.position.z = pose(2);
   q = R_to_quaternion(ypr_to_R(pose.rows(3,5)));
-  poseROS.pose.orientation.w = q(0);
-  poseROS.pose.orientation.x = q(1);
-  poseROS.pose.orientation.y = q(2);
-  poseROS.pose.orientation.z = q(3);      
+  poseROS4.pose.orientation.w = q(0);
+  poseROS4.pose.orientation.x = q(1);
+  poseROS4.pose.orientation.y = q(2);
+  poseROS4.pose.orientation.z = q(3);      
 
   // Path
   static ros::Time prevt = msg->header.stamp;
   if ((msg->header.stamp - prevt).toSec() > 0.1)
   {
     prevt = msg->header.stamp;
-    pathROS.header = poseROS.header;
-    pathROS.poses.push_back(poseROS);
-    pathPub4.publish(pathROS);
+    pathROS4.header = poseROS4.header;
+    pathROS4.poses.push_back(poseROS4);
+    pathPub4.publish(pathROS4);
   }
 
   // Mesh model                                                  
-  meshROS.header.frame_id = _frame_id;
-  meshROS.header.stamp = msg->header.stamp; 
-  meshROS.ns = "mesh";
-  meshROS.id = 0;
-  meshROS.type = visualization_msgs::Marker::MESH_RESOURCE;
-  meshROS.action = visualization_msgs::Marker::ADD;
-  meshROS.pose.position.x = msg->pose.pose.position.x + cross_x4;
-  meshROS.pose.position.y = msg->pose.pose.position.y + cross_y4;
-  meshROS.pose.position.z = msg->pose.pose.position.z + cross_z4;
+  meshROS4.header.frame_id = _frame_id;
+  meshROS4.header.stamp = msg->header.stamp; 
+  meshROS4.ns = "mesh";
+  meshROS4.id = 0;
+  meshROS4.type = visualization_msgs::Marker::MESH_RESOURCE;
+  meshROS4.action = visualization_msgs::Marker::ADD;
+  meshROS4.pose.position.x = msg->pose.pose.position.x + cross_x4;
+  meshROS4.pose.position.y = msg->pose.pose.position.y + cross_y4;
+  meshROS4.pose.position.z = msg->pose.pose.position.z + cross_z4;
   q(0) = msg->pose.pose.orientation.w;
   q(1) = msg->pose.pose.orientation.x;
   q(2) = msg->pose.pose.orientation.y;
@@ -417,25 +428,29 @@ void odom_callback4(const nav_msgs::Odometry::ConstPtr& msg)
     ypr(2)    += cross_roll4*PI/180.0;
     q          = R_to_quaternion(ypr_to_R(ypr)); 
   }  
-  meshROS.pose.orientation.w = q(0);
-  meshROS.pose.orientation.x = q(1);
-  meshROS.pose.orientation.y = q(2);
-  meshROS.pose.orientation.z = q(3);
-  meshROS.scale.x = scale4;
-  meshROS.scale.y = scale4;
-  meshROS.scale.z = scale4;
-  meshROS.color.a = color_a;
-  meshROS.color.r = color_r;
-  meshROS.color.g = color_g;
-  meshROS.color.b = color_b;
-  meshROS.mesh_resource = mesh_resource_heli4;
-  meshPub4.publish(meshROS);
+  meshROS4.pose.orientation.w = q(0);
+  meshROS4.pose.orientation.x = q(1);
+  meshROS4.pose.orientation.y = q(2);
+  meshROS4.pose.orientation.z = q(3);
+  meshROS4.scale.x = scale4;
+  meshROS4.scale.y = scale4;
+  meshROS4.scale.z = scale4;
+  meshROS4.color.a = color_a;
+  meshROS4.color.r = color_r;
+  meshROS4.color.g = color_g;
+  meshROS4.color.b = color_b;
+  meshROS4.mesh_resource = mesh_resource_heli4;
+  meshPub4.publish(meshROS4);
 
 }
 
+    geometry_msgs::PoseStamped poseROS;
+    nav_msgs::Path             pathROS;
+    visualization_msgs::Marker meshROS;
 
 void odom_callback(const nav_msgs::Odometry::ConstPtr& msg)
 {
+
   if (msg->header.frame_id == string("null"))
     return;
 
@@ -587,7 +602,7 @@ int main(int argc, char** argv)
   n.param("cross_y2", cross_y2, 0.0);
   n.param("cross_z2", cross_z2, 0.0);
 
-  //heli1
+  //heli3
   meshPub3   = n.advertise<visualization_msgs::Marker>("robot3",               100, true);  
   pathPub3   = n.advertise<nav_msgs::Path>(            "path3",                100, true);
   n.param("robot_scale3", scale3, 2.0);    
@@ -598,7 +613,7 @@ int main(int argc, char** argv)
   n.param("cross_y3", cross_y3, 0.0);
   n.param("cross_z3", cross_z3, 0.0);
 
-  //heli1
+  //heli4
   meshPub4   = n.advertise<visualization_msgs::Marker>("robot4",               100, true);  
   pathPub4   = n.advertise<nav_msgs::Path>(            "path4",                100, true);
   n.param("robot_scale4", scale4, 2.0);    

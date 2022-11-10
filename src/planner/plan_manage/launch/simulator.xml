@@ -146,9 +146,9 @@
 
         <remap from="~odometry" to="drone_0_visual_slam/odom"/>
         <remap from="~odometry1" to="drone_1_visual_slam/odom"/>
-        <remap from="~odometry2" to="drone_5_visual_slam/odom"/>
-        <remap from="~odometry3" to="drone_6_visual_slam/odom"/>
-        <remap from="~odometry4" to="drone_7_visual_slam/odom"/>
+        <remap from="~odometry2" to="drone_2_visual_slam/odom"/>
+        <remap from="~odometry3" to="drone_3_visual_slam/odom"/>
+        <remap from="~odometry4" to="drone_4_visual_slam/odom"/>
 
   </node>
   
@@ -183,28 +183,28 @@
         <param name="cross_x" value="0.0"/>
         <param name="cross_y" value="0.0"/>
         <param name="cross_z" value="0.0"/>
-                <param name="robot_scale1" value="0.06"/>
+                <param name="robot_scale1" value="0.03"/>
         <param name="cross_yaw1" value="180.0"/>
         <param name="cross_pitch1" value="0.0"/>
         <param name="cross_roll1" value="0.0"/>
         <param name="cross_x1" value="0.0"/>
         <param name="cross_y1" value="0.0"/>
         <param name="cross_z1" value="0.0"/>
-                <param name="robot_scale2" value="0.06"/>
+                <param name="robot_scale2" value="0.03"/>
         <param name="cross_yaw2" value="180.0"/>
         <param name="cross_pitch2" value="0.0"/>
         <param name="cross_roll2" value="0.0"/>
         <param name="cross_x2" value="0.0"/>
         <param name="cross_y2" value="0.0"/>
         <param name="cross_z2" value="0.0"/>
-                <param name="robot_scale3" value="0.06"/>
+                <param name="robot_scale3" value="0.03"/>
         <param name="cross_yaw3" value="180.0"/>
         <param name="cross_pitch3" value="0.0"/>
         <param name="cross_roll3" value="0.0"/>
         <param name="cross_x3" value="0.0"/>
         <param name="cross_y3" value="0.0"/>
         <param name="cross_z3" value="0.0"/>
-                <param name="robot_scale4" value="0.06"/>
+                <param name="robot_scale4" value="0.03"/>
         <param name="cross_yaw4" value="180.0"/>
         <param name="cross_pitch4" value="0.0"/>
         <param name="cross_roll4" value="0.0"/>
