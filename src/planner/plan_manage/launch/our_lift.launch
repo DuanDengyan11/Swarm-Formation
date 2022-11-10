@@ -39,7 +39,24 @@
         <arg name="init_y" value="0.0"/>
         <arg name="init_z" value="0.5"/>
 
-        <arg name="target_x" value="26.0"/>
+        <!-- heli1 -->
+        <arg name="init_x1" value="-27.0"/>
+        <arg name="init_y1" value="1.0"/>
+        <arg name="init_z1" value="1.5"/>
+        <!-- heli2 -->
+        <arg name="init_x2" value="-27.0"/>
+        <arg name="init_y2" value="-1.0"/>
+        <arg name="init_z2" value="1.5"/>
+        <!-- heli3 -->
+        <arg name="init_x3" value="-25.0"/>
+        <arg name="init_y3" value="-1.0"/>
+        <arg name="init_z3" value="1.5"/>
+        <!-- heli4 -->
+        <arg name="init_x4" value="-25.0"/>
+        <arg name="init_y4" value="1.0"/>
+        <arg name="init_z4" value="1.5"/>
+
+        <arg name="target_x" value="-25.0"/>
         <arg name="target_y" value="0.0"/>
         <arg name="target_z" value="0.5"/>
 

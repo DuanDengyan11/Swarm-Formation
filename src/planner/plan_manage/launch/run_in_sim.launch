@@ -6,6 +6,18 @@
     <arg name="init_x"/>
     <arg name="init_y"/>
     <arg name="init_z"/>
+    <arg name="init_x1"/>
+    <arg name="init_y1"/>
+    <arg name="init_z1"/>    
+    <arg name="init_x2"/>
+    <arg name="init_y2"/>
+    <arg name="init_z2"/>
+    <arg name="init_x3"/>
+    <arg name="init_y3"/>
+    <arg name="init_z3"/>
+    <arg name="init_x4"/>
+    <arg name="init_y4"/>
+    <arg name="init_z4"/>
 
     <arg name="point0_x"/>
     <arg name="point0_y"/>
@@ -93,6 +105,23 @@
         <arg name="init_x_" value="$(arg init_x)"/>
         <arg name="init_y_" value="$(arg init_y)"/>
         <arg name="init_z_" value="$(arg init_z)"/>
+        <!-- heli1 -->
+        <arg name="init_x_1" value="$(arg init_x1)"/>
+        <arg name="init_y_1" value="$(arg init_y1)"/>
+        <arg name="init_z_1" value="$(arg init_z1)"/>
+        <!-- heli2 -->
+        <arg name="init_x_2" value="$(arg init_x2)"/>
+        <arg name="init_y_2" value="$(arg init_y2)"/>
+        <arg name="init_z_2" value="$(arg init_z2)"/>
+        <!-- heli3 -->
+        <arg name="init_x_3" value="$(arg init_x3)"/>
+        <arg name="init_y_3" value="$(arg init_y3)"/>
+        <arg name="init_z_3" value="$(arg init_z3)"/>
+        <!-- heli4 -->
+        <arg name="init_x_4" value="$(arg init_x4)"/>
+        <arg name="init_y_4" value="$(arg init_y4)"/>
+        <arg name="init_z_4" value="$(arg init_z4)"/>
+
         <arg name="odometry_topic" value="$(arg odom_topic)" />
     </include>
 </launch>

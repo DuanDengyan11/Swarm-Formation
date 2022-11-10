@@ -6,21 +6,49 @@
 #include <nav_msgs/Odometry.h>
 #include "quadrotor_msgs/PositionCommand.h"
 
-ros::Subscriber _cmd_sub;
-ros::Publisher  _odom_pub;
+ros::Subscriber cmd_sub0, cmd_sub1, cmd_sub2, cmd_sub3, cmd_sub4;
+ros::Publisher  odom_pub0, odom_pub1, odom_pub2, odom_pub3, odom_pub4;
 
-quadrotor_msgs::PositionCommand _cmd;
+quadrotor_msgs::PositionCommand cmd0, cmd1, cmd2, cmd3, cmd4;
 double _init_x, _init_y, _init_z;
+double _init_x1, _init_y1, _init_z1;
+double _init_x2, _init_y2, _init_z2;
+double _init_x3, _init_y3, _init_z3;
+double _init_x4, _init_y4, _init_z4;
 
-bool rcv_cmd = false;
+bool rcv_cmd0 = false, rcv_cmd1 = false, rcv_cmd2 = false, rcv_cmd3 = false, rcv_cmd4 = false;
 // fstream file
 void rcvPosCmdCallBack(const quadrotor_msgs::PositionCommand cmd)
 {	
-	rcv_cmd = true;
-	_cmd    = cmd;
+	rcv_cmd0 = true;
+	cmd0    = cmd;
 }
 
-void pubOdom()
+void rcvPosCmdCallBack1(const quadrotor_msgs::PositionCommand cmd)
+{	
+	rcv_cmd1 = true;
+	cmd1    = cmd;
+}
+
+void rcvPosCmdCallBack2(const quadrotor_msgs::PositionCommand cmd)
+{	
+	rcv_cmd2 = true;
+	cmd2    = cmd;
+}
+
+void rcvPosCmdCallBack3(const quadrotor_msgs::PositionCommand cmd)
+{	
+	rcv_cmd3 = true;
+	cmd3    = cmd;
+}
+
+void rcvPosCmdCallBack4(const quadrotor_msgs::PositionCommand cmd)
+{	
+	rcv_cmd4 = true;
+	cmd4    = cmd;
+}
+
+void pubOdom(quadrotor_msgs::PositionCommand _cmd, ros::Publisher  _odom_pub, bool rcv_cmd, double initx, double inity, double initz)
 {	
 	nav_msgs::Odometry odom;
 	odom.header.stamp    = ros::Time::now();
@@ -58,9 +86,9 @@ void pubOdom()
 	}
 	else
 	{
-		odom.pose.pose.position.x = _init_x;
-	    odom.pose.pose.position.y = _init_y;
-	    odom.pose.pose.position.z = _init_z;
+		odom.pose.pose.position.x = initx;
+	    odom.pose.pose.position.y = inity;
+	    odom.pose.pose.position.z = initz;
 
 	    odom.pose.pose.orientation.w = 1;
 	    odom.pose.pose.orientation.x = 0;
@@ -89,15 +117,48 @@ int main (int argc, char** argv)
     nh.param("init_x", _init_x,  0.0);
     nh.param("init_y", _init_y,  0.0);
     nh.param("init_z", _init_z,  0.0);
+	// heli1
+	nh.param("init_x1", _init_x1,  0.0);
+    nh.param("init_y1", _init_y1,  0.0);
+    nh.param("init_z1", _init_z1,  0.0);
+	// heli2
+	nh.param("init_x2", _init_x2,  0.0);
+    nh.param("init_y2", _init_y2,  0.0);
+    nh.param("init_z2", _init_z2,  0.0);
+	// heli3
+	nh.param("init_x3", _init_x3,  0.0);
+    nh.param("init_y3", _init_y3,  0.0);
+    nh.param("init_z3", _init_z3,  0.0);
+	// heli4
+	nh.param("init_x4", _init_x4,  0.0);
+    nh.param("init_y4", _init_y4,  0.0);
+    nh.param("init_z4", _init_z4,  0.0);
 
-    _cmd_sub  = nh.subscribe( "command", 1, rcvPosCmdCallBack );
-    _odom_pub = nh.advertise<nav_msgs::Odometry>("odometry", 1);                      
+    cmd_sub0  = nh.subscribe( "command", 1, rcvPosCmdCallBack );
+    odom_pub0 = nh.advertise<nav_msgs::Odometry>("odometry", 1); 
+
+	cmd_sub1  = nh.subscribe( "command1", 1, rcvPosCmdCallBack1 );
+    odom_pub1 = nh.advertise<nav_msgs::Odometry>("odometry1", 1);
+
+	cmd_sub2  = nh.subscribe( "command2", 1, rcvPosCmdCallBack2 );
+    odom_pub2 = nh.advertise<nav_msgs::Odometry>("odometry2", 1); 
+
+    cmd_sub3  = nh.subscribe( "command3", 1, rcvPosCmdCallBack3 );
+    odom_pub3 = nh.advertise<nav_msgs::Odometry>("odometry3", 1);	                     
+
+    cmd_sub4  = nh.subscribe( "command4", 1, rcvPosCmdCallBack4 );
+    odom_pub4 = nh.advertise<nav_msgs::Odometry>("odometry4", 1);
 
     ros::Rate rate(100);
     bool status = ros::ok();
     while(status) 
     {
-		pubOdom();                 
+		pubOdom(cmd0, odom_pub0, rcv_cmd0, _init_x, _init_y, _init_z);
+		pubOdom(cmd1, odom_pub1, rcv_cmd1, _init_x1, _init_y1, _init_z1);                 
+		pubOdom(cmd2, odom_pub2, rcv_cmd2, _init_x2, _init_y2, _init_z2);                 
+		pubOdom(cmd3, odom_pub3, rcv_cmd3, _init_x3, _init_y3, _init_z3);                 
+		pubOdom(cmd4, odom_pub4, rcv_cmd4, _init_x4, _init_y4, _init_z4);                 
+
         ros::spinOnce();
         status = ros::ok();
         rate.sleep();
